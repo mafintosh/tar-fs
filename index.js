@@ -105,32 +105,73 @@ exports.pack = function(cwd, opts) {
 	return pack;
 };
 
+var head = function(list) {
+	return list.length ? list[list.length-1] : null
+};
+
 exports.extract = function(cwd, opts) {
 	if (!cwd) cwd = '.';
 	if (!opts) opts = {};
 
 	var ignore = opts.ignore || noop;
+	var own = opts.chown !== false && !win32 && process.getuid() === 0;
 	var extract = tar.extract();
+	var stack = [];
+	var now = new Date();
+
+	var utimesParent = function(name, cb) { // we just set the mtime on the parent dir again everytime we write an entry
+		var top;
+		while ((top = head(stack)) && name.slice(0, top[0].length) !== top[0]) stack.pop();
+		if (!top) return cb();
+		fs.utimes(top[0], now, top[1], cb);
+	};
+
+	var utimes = function(name, header, cb) {
+		if (opts.utimes === false) return cb();
+
+		if (header.type === 'directory') return fs.utimes(name, now, header.mtime, cb);
+		if (header.type === 'symlink') return utimesParent(name, cb); // TODO: how to set mtime on link?
+
+		fs.utimes(name, now, header.mtime, function(err) {
+			if (err) return cb(err);
+			utimesParent(name, cb);
+		});
+	};
+
+	var chperm = function(name, header, cb) {
+		var link = header.name === 'symlink';
+		var chmod = link ? fs.lchmod : fs.chmod;
+		var chown = link ? fs.lchown : fs.chown;
+
+		chmod(name, header.mode, function(err) {
+			if (err) return cb(err);
+			if (!own) return cb();
+			chown(name, header.uid, header.gid, cb);
+		});
+	};
 
 	extract.on('entry', function(header, stream, next) {
 		var name = path.join(cwd, path.join('/', header.name));
 
 		if (ignore(name)) {
 			stream.resume();
-			stream.on('end', next);
-			return;
+			return next();
 		}
 
-		var onstat = function(err) {
+		var stat = function(err) {
 			if (err) return next(err);
-			fs.utimes(name, new Date(), header.mtime, function(err) {
+			if (win32) return next();
+			utimes(name, header, function(err) {
 				if (err) return next(err);
-				fs.chmod(name, header.mode, next);
+				chperm(name, header, next);
 			});
 		};
 
 		var onlink = function() {
-			fs.symlink(header.linkname, name, next); // how do you set mtime on a link?
+			if (win32) return next(); // skip symlinks on win for now before it can be tested
+			fs.unlink(name, function() {
+				fs.symlink(header.linkname, name, stat);
+			});
 		};
 
 		var onfile = function() {
@@ -138,16 +179,20 @@ exports.extract = function(cwd, opts) {
 
 			pump(stream, ws, function(err) {
 				if (err) return next(err);
-				ws.on('close', onstat);
+				ws.on('close', stat);
 			});
 		};
 
-		if (header.type === 'directory') return mkdirp(name, onstat);
+		if (header.type === 'directory') {
+			stack.push([name, header.mtime]);
+			return mkdirp(name, stat);
+		}
 
 		mkdirp(path.dirname(name), function(err) {
 			if (err) return next(err);
-			if (header.type === 'symlink') return fs.unlink(name, onlink);
+			if (header.type === 'symlink') return onlink();
 			if (header.type !== 'file') return next(new Error('unsupported type for '+name+' ('+header.type+')'));
+
 			onfile();
 		});
 	});
