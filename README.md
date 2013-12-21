@@ -4,6 +4,8 @@ filesystem bindings for [tar-stream](https://github.com/mafintosh/tar-stream).
 
 	npm install tar-fs
 
+[![build status](https://secure.travis-ci.org/mafintosh/tar-fs.png)](http://travis-ci.org/mafintosh/tar-fs)
+
 ## Usage
 
 tar-fs allows you to pack directories into tarballs and extract tarballs into directories.
