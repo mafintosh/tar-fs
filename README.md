@@ -35,6 +35,14 @@ var extract = tar.extract('./my-other-directory', {
 });
 ```
 
+## Copy a directory
+
+Copying a directory with permissions and mtime intact is a as simple as
+
+``` js
+tar.pack('source-directory').pipe(tar.extract('dest-directory'));
+```
+
 ## License
 
 MIT
