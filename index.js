@@ -63,6 +63,8 @@ exports.pack = function(cwd, opts) {
 		if (err) return pack.destroy(err);
 		if (!filename) return pack.finalize();
 
+		if (stat.isSocket()) return onnextentry() // tar does not support sockets...
+
 		var header = {
 			name: normalize(filename),
 			mode: stat.mode,
