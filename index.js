@@ -139,7 +139,7 @@ exports.extract = function(cwd, opts) {
 	};
 
 	var chperm = function(name, header, cb) {
-		var link = header.name === 'symlink';
+		var link = header.type === 'symlink';
 		var chmod = link ? fs.lchmod : fs.chmod;
 		var chown = link ? fs.lchown : fs.chown;
 
