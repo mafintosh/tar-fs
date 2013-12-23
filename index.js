@@ -145,9 +145,11 @@ exports.extract = function(cwd, opts) {
 		var chmod = link ? fs.lchmod : fs.chmod;
 		var chown = link ? fs.lchown : fs.chown;
 
+		if (!chmod) return cb();
 		chmod(name, header.mode, function(err) {
 			if (err) return cb(err);
 			if (!own) return cb();
+			if (!chown) return cb();
 			chown(name, header.uid, header.gid, cb);
 		});
 	};
