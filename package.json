@@ -4,7 +4,7 @@
   "description": "filesystem bindings for tar-stream",
   "repository": "git://github.com:mafintosh/tar-fs.git",
   "dependencies": {
-    "tar-stream": "~0.2.1",
+    "tar-stream": "~0.2.2",
     "pump": "~0.2.2",
     "mkdirp": "~0.3.5"
   },
@@ -21,6 +21,6 @@
     "rimraf": "~2.2.5"
   },
   "scripts": {
-  	"test": "tap test/index.js"
+    "test": "tap test/index.js"
   }
 }
