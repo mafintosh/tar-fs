@@ -50,7 +50,7 @@ tar.pack('source-directory').pipe(tar.extract('dest-directory'));
 Packing and extracting a 6.1 GB with 2496 directories and 2398 files yields the following results on my Macbook Air
 
 * tar-fs: 34.261 ms
-* [node-tar](https://github.com/isaacs/node-tar): 366.123 ms
+* [node-tar](https://github.com/isaacs/node-tar): 366.123 ms (or 10x slower)
 
 ## License
 
