@@ -92,6 +92,7 @@ exports.pack = function(cwd, opts) {
 		if (!stat.isFile()) return pack.destroy(new Error('unsupported type for '+filename));
 
 		var entry = pack.entry(header, onnextentry);
+		if (!entry) return;
 		var rs = fs.createReadStream(path.join(cwd, filename));
 
 		pump(rs, entry);
