@@ -13,7 +13,7 @@ var echo = function(name) {
 	return name;
 };
 
-var normalize = !win32 ? echo : function() {
+var normalize = !win32 ? echo : function(name) {
 	return name.replace(/\\/g, '/');
 };
 
