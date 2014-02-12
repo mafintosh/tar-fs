@@ -37,6 +37,17 @@ var extract = tar.extract('./my-other-directory', {
 });
 ```
 
+Set `options.readable` and `options.writable` to ensure that files extracted are readable and/or writable
+
+``` js
+var extract = tar.extract('./my-directory', {
+	readable: true,
+	writable: true
+});
+```
+
+This is useful when the tarball was created on windows (which can result in dirs not being readable)
+
 ## Copy a directory
 
 Copying a directory with permissions and mtime intact is as simple as
