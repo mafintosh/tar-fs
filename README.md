@@ -37,12 +37,12 @@ var extract = tar.extract('./my-other-directory', {
 });
 ```
 
-Set `options.readable` and `options.writable` to ensure that files extracted are readable and/or writable
+Set `options.fmode` and `options.dmode` to ensure that files/directories extracted have the corresponding modes
 
 ``` js
 var extract = tar.extract('./my-directory', {
-	readable: true,
-	writable: true
+	dmode: 0555, // all dirs and files should be readable
+	fmode: 0444
 });
 ```
 

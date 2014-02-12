@@ -121,9 +121,9 @@ exports.extract = function(cwd, opts) {
 	var extract = tar.extract();
 	var stack = [];
 	var now = new Date();
-	var umask = ~process.umask();
-	var dmode = 0;
-	var fmode = 0;
+	var umask = typeof opts.umask === 'number' ? ~opts.umask : ~process.umask();
+	var dmode = typeof opts.dmode === 'number' ? opts.dmode : 0;
+	var fmode = typeof opts.fmode === 'number' ? opts.fmode : 0;
 
 	if (opts.readable) {
 		dmode |= 0555;
