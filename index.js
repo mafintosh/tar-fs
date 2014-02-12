@@ -121,6 +121,18 @@ exports.extract = function(cwd, opts) {
 	var extract = tar.extract();
 	var stack = [];
 	var now = new Date();
+	var umask = ~process.umask();
+	var dmode = 0;
+	var fmode = 0;
+
+	if (opts.readable) {
+		dmode |= 0555;
+		fmode |= 0444;
+	}
+	if (opts.writable) {
+		dmode |= 0333;
+		fmode |= 0222;
+	}
 
 	var utimesParent = function(name, cb) { // we just set the mtime on the parent dir again everytime we write an entry
 		var top;
@@ -147,7 +159,7 @@ exports.extract = function(cwd, opts) {
 		var chown = link ? fs.lchown : fs.chown;
 
 		if (!chmod) return cb();
-		chmod(name, header.mode, function(err) {
+		chmod(name, (header.mode | (header.type === 'directory' ? dmode : fmode)) & umask, function(err) {
 			if (err) return cb(err);
 			if (!own) return cb();
 			if (!chown) return cb();
