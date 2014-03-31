@@ -48,6 +48,7 @@ exports.pack = function(cwd, opts) {
 	if (!opts) opts = {};
 
 	var ignore = opts.ignore || noop;
+	var map = opts.map || noop;
 	var statNext = statAll(cwd, ignore);
 	var pack = tar.pack();
 
@@ -91,6 +92,8 @@ exports.pack = function(cwd, opts) {
 
 		if (!stat.isFile()) return pack.destroy(new Error('unsupported type for '+filename));
 
+		header = map(header) || header
+
 		var entry = pack.entry(header, onnextentry);
 		if (!entry) return;
 		var rs = fs.createReadStream(path.join(cwd, filename));
@@ -117,6 +120,7 @@ exports.extract = function(cwd, opts) {
 	if (!opts) opts = {};
 
 	var ignore = opts.ignore || noop;
+	var map = opts.map || noop
 	var own = opts.chown !== false && !win32 && process.getuid() === 0;
 	var extract = tar.extract();
 	var stack = [];
@@ -168,6 +172,7 @@ exports.extract = function(cwd, opts) {
 	};
 
 	extract.on('entry', function(header, stream, next) {
+		header = map(header) || header
 		var name = path.join(cwd, path.join('/', header.name));
 
 		if (ignore(name)) {
