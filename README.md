@@ -37,6 +37,24 @@ var extract = tar.extract('./my-other-directory', {
 });
 ```
 
+If you want to modify the headers when packing/extracting add a map function to the options
+
+``` js
+var pack = tar.pack('./my-directory', {
+	map: function(header) {
+		header.name = 'prefixed/'+header.name;
+		return header;
+	}
+});
+
+var extract = tar.pack('./my-directory', {
+	map: function(header) {
+		header.name = 'another-prefix/'+header.name;
+		return header;
+	}
+});
+```
+
 Set `options.fmode` and `options.dmode` to ensure that files/directories extracted have the corresponding modes
 
 ``` js
