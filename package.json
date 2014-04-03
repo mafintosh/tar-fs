@@ -1,6 +1,6 @@
 {
   "name": "tar-fs",
-  "version": "0.3.0",
+  "version": "0.3.1",
   "description": "filesystem bindings for tar-stream",
   "repository": "git://github.com:mafintosh/tar-fs.git",
   "dependencies": {
