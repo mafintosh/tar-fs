@@ -4,7 +4,7 @@
   "description": "filesystem bindings for tar-stream",
   "repository": "git://github.com:mafintosh/tar-fs.git",
   "dependencies": {
-    "tar-stream": "~0.3.2",
+    "tar-stream": "~0.3.3",
     "pump": "~0.3.0",
     "mkdirp": "~0.3.5"
   },
