@@ -86,3 +86,42 @@ test('symlink', function(t) {
 			t.same(fs.readlinkSync(linkB), fs.readlinkSync(linkA));
 		});
 });
+
+test('strip', function(t) {
+	t.plan(2)
+
+	var a = path.join(__dirname, 'fixtures', 'b');
+	var b = path.join(__dirname, 'fixtures', 'copy', 'b-strip');
+
+	rimraf.sync(b)
+
+	tar.pack(a)
+		.pipe(tar.extract(b, {strip:1}))
+		.on('finish', function() {
+				var files = fs.readdirSync(b).sort();
+				t.same(files.length, 1)
+				t.same(files[0], 'a')
+		})
+})
+
+test('strip + map', function(t) {
+	t.plan(2)
+
+	var a = path.join(__dirname, 'fixtures', 'b');
+	var b = path.join(__dirname, 'fixtures', 'copy', 'b-strip');
+
+	rimraf.sync(b)
+
+	var uppercase = function(header) {
+		header.name = header.name.toUpperCase()
+		return header
+	}
+
+	tar.pack(a)
+		.pipe(tar.extract(b, {strip:1, map:uppercase}))
+		.on('finish', function() {
+				var files = fs.readdirSync(b).sort();
+				t.same(files.length, 1)
+				t.same(files[0], 'A')
+		})
+})
