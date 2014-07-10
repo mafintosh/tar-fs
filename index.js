@@ -43,6 +43,14 @@ var statAll = function(cwd, ignore) {
 	};
 };
 
+var strip = function(map, level) {
+	return function(header) {
+		header.name = header.name.split('/').slice(level).join('/')
+		if (header.linkname) header.linkname = header.linkname.split('/').slice(level).join('/')
+		return map(header)
+	}
+}
+
 exports.pack = function(cwd, opts) {
 	if (!cwd) cwd = '.';
 	if (!opts) opts = {};
@@ -51,6 +59,8 @@ exports.pack = function(cwd, opts) {
 	var map = opts.map || noop;
 	var statNext = statAll(cwd, ignore);
 	var pack = tar.pack();
+
+	if (opts.strip) map = strip(map, opts.strip)
 
 	var onlink = function(filename, header) {
 		fs.readlink(path.join(cwd, filename), function(err, linkname) {
