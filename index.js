@@ -139,6 +139,8 @@ exports.extract = function(cwd, opts) {
 	var dmode = typeof opts.dmode === 'number' ? opts.dmode : 0;
 	var fmode = typeof opts.fmode === 'number' ? opts.fmode : 0;
 
+	if (opts.strip) map = strip(map, opts.strip)
+
 	if (opts.readable) {
 		dmode |= 0555;
 		fmode |= 0444;

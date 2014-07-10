@@ -100,7 +100,7 @@ test('strip', function(t) {
 		.on('finish', function() {
 				var files = fs.readdirSync(b).sort();
 				t.same(files.length, 1)
-				t.same(files[0], 'a')
+				t.same(files[0], 'test.js')
 		})
 })
 
@@ -122,6 +122,6 @@ test('strip + map', function(t) {
 		.on('finish', function() {
 				var files = fs.readdirSync(b).sort();
 				t.same(files.length, 1)
-				t.same(files[0], 'A')
+				t.same(files[0], 'TEST.JS')
 		})
 })
