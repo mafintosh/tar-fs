@@ -64,7 +64,7 @@ var extract = tar.extract('./my-directory', {
 });
 ```
 
-This is useful when the tarball was created on windows (which can result in dirs not being readable)
+It can be useful to use `dmode` and `fmode` if you are packing/unpacking tarballs between *nix/windows to ensure that all files/directories unpacked are readable.
 
 ## Copy a directory
 
