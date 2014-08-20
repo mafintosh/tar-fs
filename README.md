@@ -55,6 +55,22 @@ var extract = tar.pack('./my-directory', {
 });
 ```
 
+Similarly you can use `mapStream` incase you wanna modify the input/output file streams
+
+``` js
+var pack = tar.pack('./my-directory', {
+	mapStream: function(fileStream) {
+		return fileStream.pipe(someTransform);
+	}
+});
+
+var extract = tar.extract('./my-directory', {
+	mapStream: function(fileStream) {
+		return fileStream.pipe(someTransform);
+	}
+});
+```
+
 Set `options.fmode` and `options.dmode` to ensure that files/directories extracted have the corresponding modes
 
 ``` js
