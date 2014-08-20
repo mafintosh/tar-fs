@@ -57,6 +57,7 @@ exports.pack = function(cwd, opts) {
 
 	var ignore = opts.ignore || noop;
 	var map = opts.map || noop;
+	var mapStream = opts.mapStream || echo;
 	var statNext = statAll(cwd, ignore);
 	var pack = tar.pack();
 
@@ -108,7 +109,7 @@ exports.pack = function(cwd, opts) {
 		if (!entry) return;
 		var rs = fs.createReadStream(path.join(cwd, filename));
 
-		pump(rs, entry);
+		pump(mapStream(rs), entry);
 	};
 
 	var onnextentry = function(err) {
@@ -130,7 +131,8 @@ exports.extract = function(cwd, opts) {
 	if (!opts) opts = {};
 
 	var ignore = opts.ignore || noop;
-	var map = opts.map || noop
+	var map = opts.map || noop;
+	var mapStream = opts.mapStream || echo;
 	var own = opts.chown !== false && !win32 && process.getuid() === 0;
 	var extract = tar.extract();
 	var stack = [];
@@ -211,7 +213,7 @@ exports.extract = function(cwd, opts) {
 		var onfile = function() {
 			var ws = fs.createWriteStream(name);
 
-			pump(stream, ws, function(err) {
+			pump(mapStream(stream), ws, function(err) {
 				if (err) return next(err);
 				ws.on('close', stat);
 			});
