@@ -1,6 +1,6 @@
 {
   "name": "tar-fs",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "filesystem bindings for tar-stream",
   "repository": {
     "type": "git",
