@@ -56,7 +56,7 @@ exports.pack = function(cwd, opts) {
   if (!opts) opts = {}
 
   var xfs = opts.fs || fs
-  var ignore = opts.ignore || noop
+  var ignore = opts.ignore || opts.filter || noop
   var map = opts.map || noop
   var mapStream = opts.mapStream || echo
   var statNext = statAll(xfs, cwd, ignore)
@@ -140,7 +140,7 @@ exports.extract = function(cwd, opts) {
   if (!opts) opts = {}
 
   var xfs = opts.fs || fs
-  var ignore = opts.ignore || noop
+  var ignore = opts.ignore || opts.filter || noop
   var map = opts.map || noop
   var mapStream = opts.mapStream || echo
   var own = opts.chown !== false && !win32 && processGetuid() === 0
