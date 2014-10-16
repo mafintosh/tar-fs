@@ -60,6 +60,7 @@ exports.pack = function(cwd, opts) {
   var map = opts.map || noop
   var mapStream = opts.mapStream || echo
   var statNext = statAll(xfs, cwd, ignore)
+  var strict = opts.strict !== false
   var pack = tar.pack()
 
   if (opts.strip) map = strip(map, opts.strip)
@@ -102,7 +103,10 @@ exports.pack = function(cwd, opts) {
 
     // TODO: add fifo etc...
 
-    if (!stat.isFile()) return pack.destroy(new Error('unsupported type for '+filename))
+    if (!stat.isFile()) {
+      if (strict) return pack.destroy(new Error('unsupported type for '+filename))
+      return onnextentry()
+    }
 
     header = map(header) || header
 
@@ -150,6 +154,7 @@ exports.extract = function(cwd, opts) {
   var umask = typeof opts.umask === 'number' ? ~opts.umask : ~processUmask()
   var dmode = typeof opts.dmode === 'number' ? opts.dmode : 0
   var fmode = typeof opts.fmode === 'number' ? opts.fmode : 0
+  var strict = opts.strict !== false
 
   if (opts.strip) map = strip(map, opts.strip)
 
@@ -237,7 +242,12 @@ exports.extract = function(cwd, opts) {
     mkdirp(path.dirname(name), {fs:xfs}, function(err) {
       if (err) return next(err)
       if (header.type === 'symlink') return onlink()
-      if (header.type !== 'file') return next(new Error('unsupported type for '+name+' ('+header.type+')'))
+
+      if (header.type !== 'file') {
+        if (strict) return next(new Error('unsupported type for '+name+' ('+header.type+')'))
+        stream.resume()
+        return next()
+      }
 
       onfile()
     })
