@@ -49,7 +49,7 @@ var pack = tar.pack('./my-directory', {
   }
 })
 
-var extract = tar.pack('./my-directory', {
+var extract = tar.extract('./my-directory', {
   map: function(header) {
     header.name = 'another-prefix/'+header.name
     return header
