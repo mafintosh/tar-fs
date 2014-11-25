@@ -114,7 +114,7 @@ exports.pack = function(cwd, opts) {
     if (!entry) return
     var rs = xfs.createReadStream(path.join(cwd, filename))
 
-    pump(mapStream(rs), entry)
+    pump(mapStream(rs, header), entry)
   }
 
   var onnextentry = function(err) {
@@ -228,7 +228,7 @@ exports.extract = function(cwd, opts) {
     var onfile = function() {
       var ws = xfs.createWriteStream(name)
 
-      pump(mapStream(stream), ws, function(err) {
+      pump(mapStream(stream, header), ws, function(err) {
         if (err) return next(err)
         ws.on('close', stat)
       })
