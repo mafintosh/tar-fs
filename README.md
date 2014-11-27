@@ -39,6 +39,14 @@ var extract = tar.extract('./my-other-directory', {
 })
 ```
 
+You can also specify which entries to pack using the `entries` option
+
+```js
+var pack = tar.pack('./my-directory', {
+  entries: ['file1', 'subdir/file2'] // only the specific entries will be packed
+})
+```
+
 If you want to modify the headers when packing/extracting add a map function to the options
 
 ``` js

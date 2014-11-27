@@ -17,8 +17,8 @@ var normalize = !win32 ? echo : function(name) {
   return name.replace(/\\/g, '/')
 }
 
-var statAll = function(fs, cwd, ignore) {
-  var queue = ['.']
+var statAll = function(fs, cwd, ignore, entries) {
+  var queue = entries || ['.']
 
   return function loop(callback) {
     if (!queue.length) return callback()
@@ -59,7 +59,7 @@ exports.pack = function(cwd, opts) {
   var ignore = opts.ignore || opts.filter || noop
   var map = opts.map || noop
   var mapStream = opts.mapStream || echo
-  var statNext = statAll(xfs, cwd, ignore)
+  var statNext = statAll(xfs, cwd, ignore, opts.entries)
   var strict = opts.strict !== false
   var pack = tar.pack()
 
