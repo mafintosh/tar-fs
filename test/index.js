@@ -125,3 +125,27 @@ test('strip + map', function(t) {
         t.same(files[0], 'TEST.JS')
     })
 })
+
+test('specific entries', function(t) {
+  t.plan(6)
+
+  var a = path.join(__dirname, 'fixtures', 'd')
+  var b = path.join(__dirname, 'fixtures', 'copy', 'd-entries')
+
+  var entries = [ 'file1', 'sub-files/file3', 'sub-dir' ]
+
+  rimraf.sync(b)
+  tar.pack(a, { entries: entries })
+    .pipe(tar.extract(b))
+    .on('finish', function() {
+      var files = fs.readdirSync(b)
+      t.same(files.length, 3)
+      t.notSame(files.indexOf('file1'), -1)
+      t.notSame(files.indexOf('sub-files'), -1)
+      t.notSame(files.indexOf('sub-dir'), -1)
+      var subFiles = fs.readdirSync(path.join(b, 'sub-files'))
+      t.same(subFiles, ['file3'])
+      var subDir = fs.readdirSync(path.join(b, 'sub-dir'))
+      t.same(subDir, ['file5'])
+    })
+})
