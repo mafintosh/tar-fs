@@ -89,6 +89,8 @@ exports.pack = function(cwd, opts) {
       gid: stat.gid
     }
 
+    header = map(header) || header
+
     if (stat.isDirectory()) {
       header.size = 0
       header.type = 'directory'
@@ -107,8 +109,6 @@ exports.pack = function(cwd, opts) {
       if (strict) return pack.destroy(new Error('unsupported type for '+filename))
       return onnextentry()
     }
-
-    header = map(header) || header
 
     var entry = pack.entry(header, onnextentry)
     if (!entry) return

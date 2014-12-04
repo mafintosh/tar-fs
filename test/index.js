@@ -126,6 +126,31 @@ test('strip + map', function(t) {
     })
 })
 
+test('map + dir + permissions', function(t) {
+  t.plan(2)
+
+  var a = path.join(__dirname, 'fixtures', 'b')
+  var b = path.join(__dirname, 'fixtures', 'copy', 'a-perms')
+
+  rimraf.sync(b)
+
+  var aWithMode = function(header) {
+    if(header.name === 'a') {
+      header.mode = 0700;
+    }
+    return header
+  };
+
+  tar.pack(a)
+      .pipe(tar.extract(b, {map:aWithMode}))
+      .on('finish', function() {
+        var files = fs.readdirSync(b).sort()
+        var stat = fs.statSync(path.join(b, 'a'));
+        t.same(files.length, 1)
+        t.same(stat.mode & 0777, 0700)
+      })
+});
+
 test('specific entries', function(t) {
   t.plan(6)
 
