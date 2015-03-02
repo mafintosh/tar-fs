@@ -87,6 +87,40 @@ test('symlink', function(t) {
     })
 })
 
+test('follow symlinks', function(t) {
+  if (win32) { // no symlink support on win32 currently. TODO: test if this can be enabled somehow
+    t.plan(1)
+    t.ok(true)
+    return
+  }
+
+  t.plan(5)
+
+  var a = path.join(__dirname, 'fixtures', 'c')
+
+  rimraf.sync(path.join(a, 'link'))
+  fs.symlinkSync('.gitignore', path.join(a, 'link'))
+
+  var b = path.join(__dirname, 'fixtures', 'copy', 'c-dereference')
+
+  rimraf.sync(b)
+  tar.pack(a, {dereference: true})
+    .pipe(tar.extract(b))
+    .on('finish', function() {
+      var files = fs.readdirSync(b).sort()
+      t.same(files.length, 2)
+      t.same(files[0], '.gitignore')
+      t.same(files[1], 'link')
+
+      var file1 = path.join(b, '.gitignore')
+      var file2 = path.join(b, 'link')
+
+      t.same(fs.lstatSync(file1).mtime.getTime(), fs.lstatSync(file2).mtime.getTime())
+      t.same(fs.readFileSync(file1), fs.readFileSync(file2))
+    })
+})
+
+
 test('strip', function(t) {
   t.plan(2)
 

@@ -100,6 +100,8 @@ It can be useful to use `dmode` and `fmode` if you are packing/unpacking tarball
 
 Set `options.strict` to `false` if you want to ignore errors due to unsupported entry types (like device files)
 
+To dereference symlinks (pack the contents of the symlink instead of the link itself) set `options.dereference` to `true`.
+
 ## Copy a directory
 
 Copying a directory with permissions and mtime intact is as simple as
