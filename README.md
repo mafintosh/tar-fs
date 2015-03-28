@@ -70,7 +70,7 @@ Similarly you can use `mapStream` incase you wanna modify the input/output file 
 ``` js
 var pack = tar.pack('./my-directory', {
   mapStream: function(fileStream, header) {
-    if (path.extname(header.file) === '.js') {
+    if (path.extname(header.name) === '.js') {
       return fileStream.pipe(someTransform)
     }
     return fileStream;
@@ -79,7 +79,7 @@ var pack = tar.pack('./my-directory', {
 
 var extract = tar.extract('./my-directory', {
   mapStream: function(fileStream, header) {
-    if (path.extname(header.file) === '.js') {
+    if (path.extname(header.name) === '.js') {
       return fileStream.pipe(someTransform)
     }
     return fileStream;
