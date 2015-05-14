@@ -12,6 +12,8 @@ npm install tar-fs
 
 tar-fs allows you to pack directories into tarballs and extract tarballs into directories.
 
+It doesn't gunzip for you, so if you want to extract a `.tar.gz` with this you'll need to use something like [gunzip-maybe](https://github.com/mafintosh/gunzip-maybe) in addition to this.
+
 ``` js
 var tar = require('tar-fs')
 var fs = require('fs')
@@ -23,7 +25,7 @@ tar.pack('./my-directory').pipe(fs.createWriteStream('my-tarball.tar'))
 fs.createReadStream('my-other-tarball.tar').pipe(tar.extract('./my-other-directory'))
 ```
 
-To ignore various files when packing or extracting add a ignore function to the options
+To ignore various files when packing or extracting add a ignore function to the options. `ignore` is also an alias for `filter`.
 
 ``` js
 var pack = tar.pack('./my-directory', {
