@@ -14,7 +14,7 @@ var echo = function(name) {
 }
 
 var normalize = !win32 ? echo : function(name) {
-  return name.replace(/\\/g, '/')
+  return name.replace(/\\/g, '/').replace(/:/g, '_');
 }
 
 var statAll = function(fs, stat, cwd, ignore, entries) {
@@ -202,6 +202,8 @@ exports.extract = function(cwd, opts) {
 
   extract.on('entry', function(header, stream, next) {
     header = map(header) || header
+
+    header.name = normalize(header.name);
     var name = path.join(cwd, path.join('/', header.name))
 
     if (ignore(name)) {
