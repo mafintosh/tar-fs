@@ -7,7 +7,7 @@ var os = require('os')
 
 var win32 = os.platform() === 'win32'
 
-test('copy a -> copy/a', function(t) {
+test('copy a -> copy/a', function (t) {
   t.plan(5)
 
   var a = path.join(__dirname, 'fixtures', 'a')
@@ -28,7 +28,7 @@ test('copy a -> copy/a', function(t) {
     })
 })
 
-test('copy b -> copy/b', function(t) {
+test('copy b -> copy/b', function (t) {
   t.plan(8)
 
   var a = path.join(__dirname, 'fixtures', 'b')
@@ -54,7 +54,7 @@ test('copy b -> copy/b', function(t) {
     })
 })
 
-test('symlink', function(t) {
+test('symlink', function (t) {
   if (win32) { // no symlink support on win32 currently. TODO: test if this can be enabled somehow
     t.plan(1)
     t.ok(true)
@@ -87,7 +87,7 @@ test('symlink', function(t) {
     })
 })
 
-test('follow symlinks', function(t) {
+test('follow symlinks', function (t) {
   if (win32) { // no symlink support on win32 currently. TODO: test if this can be enabled somehow
     t.plan(1)
     t.ok(true)
@@ -106,7 +106,7 @@ test('follow symlinks', function(t) {
   rimraf.sync(b)
   tar.pack(a, {dereference: true})
     .pipe(tar.extract(b))
-    .on('finish', function() {
+    .on('finish', function () {
       var files = fs.readdirSync(b).sort()
       t.same(files.length, 2)
       t.same(files[0], '.gitignore')
@@ -121,7 +121,7 @@ test('follow symlinks', function(t) {
 })
 
 
-test('strip', function(t) {
+test('strip', function (t) {
   t.plan(2)
 
   var a = path.join(__dirname, 'fixtures', 'b')
@@ -131,14 +131,14 @@ test('strip', function(t) {
 
   tar.pack(a)
     .pipe(tar.extract(b, {strip:1}))
-    .on('finish', function() {
-        var files = fs.readdirSync(b).sort()
-        t.same(files.length, 1)
-        t.same(files[0], 'test.js')
+    .on('finish', function () {
+      var files = fs.readdirSync(b).sort()
+      t.same(files.length, 1)
+      t.same(files[0], 'test.js')
     })
 })
 
-test('strip + map', function(t) {
+test('strip + map', function (t) {
   t.plan(2)
 
   var a = path.join(__dirname, 'fixtures', 'b')
@@ -146,21 +146,21 @@ test('strip + map', function(t) {
 
   rimraf.sync(b)
 
-  var uppercase = function(header) {
+  var uppercase = function (header) {
     header.name = header.name.toUpperCase()
     return header
   }
 
   tar.pack(a)
     .pipe(tar.extract(b, {strip:1, map:uppercase}))
-    .on('finish', function() {
-        var files = fs.readdirSync(b).sort()
-        t.same(files.length, 1)
-        t.same(files[0], 'TEST.JS')
+    .on('finish', function () {
+      var files = fs.readdirSync(b).sort()
+      t.same(files.length, 1)
+      t.same(files[0], 'TEST.JS')
     })
 })
 
-test('map + dir + permissions', function(t) {
+test('map + dir + permissions', function (t) {
   t.plan(2)
 
   var a = path.join(__dirname, 'fixtures', 'b')
@@ -168,24 +168,24 @@ test('map + dir + permissions', function(t) {
 
   rimraf.sync(b)
 
-  var aWithMode = function(header) {
+  var aWithMode = function (header) {
     if(header.name === 'a') {
-      header.mode = 0700;
+      header.mode = 0700
     }
     return header
-  };
+  }
 
   tar.pack(a)
       .pipe(tar.extract(b, {map:aWithMode}))
-      .on('finish', function() {
+      .on('finish', function () {
         var files = fs.readdirSync(b).sort()
-        var stat = fs.statSync(path.join(b, 'a'));
+        var stat = fs.statSync(path.join(b, 'a'))
         t.same(files.length, 1)
         t.same(stat.mode & 0777, 0700)
       })
-});
+})
 
-test('specific entries', function(t) {
+test('specific entries', function (t) {
   t.plan(6)
 
   var a = path.join(__dirname, 'fixtures', 'd')
@@ -196,7 +196,7 @@ test('specific entries', function(t) {
   rimraf.sync(b)
   tar.pack(a, { entries: entries })
     .pipe(tar.extract(b))
-    .on('finish', function() {
+    .on('finish', function () {
       var files = fs.readdirSync(b)
       t.same(files.length, 3)
       t.notSame(files.indexOf('file1'), -1)

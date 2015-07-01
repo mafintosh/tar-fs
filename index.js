@@ -7,30 +7,30 @@ var os = require('os')
 
 var win32 = os.platform() === 'win32'
 
-var noop = function() {}
+var noop = function () {}
 
-var echo = function(name) {
+var echo = function (name) {
   return name
 }
 
-var normalize = !win32 ? echo : function(name) {
+var normalize = !win32 ? echo : function (name) {
   return name.replace(/\\/g, '/').replace(/:/g, '_')
 }
 
-var statAll = function(fs, stat, cwd, ignore, entries) {
+var statAll = function (fs, stat, cwd, ignore, entries) {
   var queue = entries || ['.']
 
-  return function loop(callback) {
+  return function loop (callback) {
     if (!queue.length) return callback()
     var next = queue.shift()
     var nextAbs = path.join(cwd, next)
 
-    stat(nextAbs, function(err, stat) {
+    stat(nextAbs, function (err, stat) {
       if (err) return callback(err)
 
       if (!stat.isDirectory()) return callback(null, next, stat)
 
-      fs.readdir(nextAbs, function(err, files) {
+      fs.readdir(nextAbs, function (err, files) {
         if (err) return callback(err)
 
         for (var i = 0; i < files.length; i++) {
@@ -43,15 +43,15 @@ var statAll = function(fs, stat, cwd, ignore, entries) {
   }
 }
 
-var strip = function(map, level) {
-  return function(header) {
+var strip = function (map, level) {
+  return function (header) {
     header.name = header.name.split('/').slice(level).join('/')
     if (header.linkname) header.linkname = header.linkname.split('/').slice(level).join('/')
     return map(header)
   }
 }
 
-exports.pack = function(cwd, opts) {
+exports.pack = function (cwd, opts) {
   if (!cwd) cwd = '.'
   if (!opts) opts = {}
 
@@ -65,15 +65,15 @@ exports.pack = function(cwd, opts) {
 
   if (opts.strip) map = strip(map, opts.strip)
 
-  var onlink = function(filename, header) {
-    xfs.readlink(path.join(cwd, filename), function(err, linkname) {
+  var onlink = function (filename, header) {
+    xfs.readlink(path.join(cwd, filename), function (err, linkname) {
       if (err) return pack.destroy(err)
       header.linkname = normalize(linkname)
       pack.entry(header, onnextentry)
     })
   }
 
-  var onstat = function(err, filename, stat) {
+  var onstat = function (err, filename, stat) {
     if (err) return pack.destroy(err)
     if (!filename) return pack.finalize()
 
@@ -106,7 +106,7 @@ exports.pack = function(cwd, opts) {
     // TODO: add fifo etc...
 
     if (!stat.isFile()) {
-      if (strict) return pack.destroy(new Error('unsupported type for '+filename))
+      if (strict) return pack.destroy(new Error('unsupported type for ' + filename))
       return onnextentry()
     }
 
@@ -115,14 +115,14 @@ exports.pack = function(cwd, opts) {
 
     var rs = mapStream(xfs.createReadStream(path.join(cwd, filename)), header)
 
-    rs.on('error', function(err) { // always forward errors on destroy
+    rs.on('error', function (err) { // always forward errors on destroy
       entry.destroy(err)
     })
 
     pump(rs, entry)
   }
 
-  var onnextentry = function(err) {
+  var onnextentry = function (err) {
     if (err) return pack.destroy(err)
     statNext(onstat)
   }
@@ -132,19 +132,19 @@ exports.pack = function(cwd, opts) {
   return pack
 }
 
-var head = function(list) {
+var head = function (list) {
   return list.length ? list[list.length-1] : null
 }
 
-var processGetuid = function() {
+var processGetuid = function () {
   return process.getuid ? process.getuid() : -1
 }
 
-var processUmask = function() {
+var processUmask = function () {
   return process.umask ? process.umask() : 0
 }
 
-exports.extract = function(cwd, opts) {
+exports.extract = function (cwd, opts) {
   if (!cwd) cwd = '.'
   if (!opts) opts = {}
 
@@ -172,32 +172,32 @@ exports.extract = function(cwd, opts) {
     fmode |= 0222
   }
 
-  var utimesParent = function(name, cb) { // we just set the mtime on the parent dir again everytime we write an entry
+  var utimesParent = function (name, cb) { // we just set the mtime on the parent dir again everytime we write an entry
     var top
     while ((top = head(stack)) && name.slice(0, top[0].length) !== top[0]) stack.pop()
     if (!top) return cb()
     xfs.utimes(top[0], now, top[1], cb)
   }
 
-  var utimes = function(name, header, cb) {
+  var utimes = function (name, header, cb) {
     if (opts.utimes === false) return cb()
 
     if (header.type === 'directory') return xfs.utimes(name, now, header.mtime, cb)
     if (header.type === 'symlink') return utimesParent(name, cb) // TODO: how to set mtime on link?
 
-    xfs.utimes(name, now, header.mtime, function(err) {
+    xfs.utimes(name, now, header.mtime, function (err) {
       if (err) return cb(err)
       utimesParent(name, cb)
     })
   }
 
-  var chperm = function(name, header, cb) {
+  var chperm = function (name, header, cb) {
     var link = header.type === 'symlink'
     var chmod = link ? xfs.lchmod : xfs.chmod
     var chown = link ? xfs.lchown : xfs.chown
 
     if (!chmod) return cb()
-    chmod(name, (header.mode | (header.type === 'directory' ? dmode : fmode)) & umask, function(err) {
+    chmod(name, (header.mode | (header.type === 'directory' ? dmode : fmode)) & umask, function (err) {
       if (err) return cb(err)
       if (!own) return cb()
       if (!chown) return cb()
@@ -205,7 +205,7 @@ exports.extract = function(cwd, opts) {
     })
   }
 
-  extract.on('entry', function(header, stream, next) {
+  extract.on('entry', function (header, stream, next) {
     header = map(header) || header
     header.name = normalize(header.name)
     var name = path.join(cwd, path.join('/', header.name))
@@ -215,31 +215,31 @@ exports.extract = function(cwd, opts) {
       return next()
     }
 
-    var stat = function(err) {
+    var stat = function (err) {
       if (err) return next(err)
       if (win32) return next()
-      utimes(name, header, function(err) {
+      utimes(name, header, function (err) {
         if (err) return next(err)
         chperm(name, header, next)
       })
     }
 
-    var onlink = function() {
+    var onlink = function () {
       if (win32) return next() // skip symlinks on win for now before it can be tested
-      xfs.unlink(name, function() {
+      xfs.unlink(name, function () {
         xfs.symlink(header.linkname, name, stat)
       })
     }
 
-    var onfile = function() {
+    var onfile = function () {
       var ws = xfs.createWriteStream(name)
       var rs = mapStream(stream, header)
 
-      ws.on('error', function(err) { // always forward errors on destroy
+      ws.on('error', function (err) { // always forward errors on destroy
         rs.destroy(err)
       })
 
-      pump(rs, ws, function(err) {
+      pump(rs, ws, function (err) {
         if (err) return next(err)
         ws.on('close', stat)
       })
@@ -250,12 +250,12 @@ exports.extract = function(cwd, opts) {
       return mkdirp(name, {fs:xfs}, stat)
     }
 
-    mkdirp(path.dirname(name), {fs:xfs}, function(err) {
+    mkdirp(path.dirname(name), {fs:xfs}, function (err) {
       if (err) return next(err)
       if (header.type === 'symlink') return onlink()
 
       if (header.type !== 'file') {
-        if (strict) return next(new Error('unsupported type for '+name+' ('+header.type+')'))
+        if (strict) return next(new Error('unsupported type for ' + name + ' (' + header.type + ')'))
         stream.resume()
         return next()
       }
