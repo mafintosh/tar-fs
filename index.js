@@ -61,9 +61,20 @@ exports.pack = function (cwd, opts) {
   var mapStream = opts.mapStream || echo
   var statNext = statAll(xfs, opts.dereference ? xfs.stat : xfs.lstat, cwd, ignore, opts.entries)
   var strict = opts.strict !== false
+  var dmode = typeof opts.dmode === 'number' ? opts.dmode : 0
+  var fmode = typeof opts.fmode === 'number' ? opts.fmode : 0
   var pack = tar.pack()
 
   if (opts.strip) map = strip(map, opts.strip)
+
+  if (opts.readable) {
+    dmode |= 0555
+    fmode |= 0444
+  }
+  if (opts.writable) {
+    dmode |= 0333
+    fmode |= 0222
+  }
 
   var onlink = function (filename, header) {
     xfs.readlink(path.join(cwd, filename), function (err, linkname) {
@@ -81,7 +92,7 @@ exports.pack = function (cwd, opts) {
 
     var header = {
       name: normalize(filename),
-      mode: stat.mode,
+      mode: stat.mode | (stat.isDirectory() ? dmode : fmode),
       mtime: stat.mtime,
       size: stat.size,
       type: 'file',
