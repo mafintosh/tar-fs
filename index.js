@@ -68,12 +68,12 @@ exports.pack = function (cwd, opts) {
   if (opts.strip) map = strip(map, opts.strip)
 
   if (opts.readable) {
-    dmode |= 0555
-    fmode |= 0444
+    dmode |= parseInt(555, 8)
+    fmode |= parseInt(444, 8)
   }
   if (opts.writable) {
-    dmode |= 0333
-    fmode |= 0222
+    dmode |= parseInt(333, 8)
+    fmode |= parseInt(222, 8)
   }
 
   var onlink = function (filename, header) {
@@ -144,7 +144,7 @@ exports.pack = function (cwd, opts) {
 }
 
 var head = function (list) {
-  return list.length ? list[list.length-1] : null
+  return list.length ? list[list.length - 1] : null
 }
 
 var processGetuid = function () {
@@ -175,12 +175,12 @@ exports.extract = function (cwd, opts) {
   if (opts.strip) map = strip(map, opts.strip)
 
   if (opts.readable) {
-    dmode |= 0555
-    fmode |= 0444
+    dmode |= parseInt(555, 8)
+    fmode |= parseInt(444, 8)
   }
   if (opts.writable) {
-    dmode |= 0333
-    fmode |= 0222
+    dmode |= parseInt(333, 8)
+    fmode |= parseInt(222, 8)
   }
 
   var utimesParent = function (name, cb) { // we just set the mtime on the parent dir again everytime we write an entry
@@ -258,10 +258,10 @@ exports.extract = function (cwd, opts) {
 
     if (header.type === 'directory') {
       stack.push([name, header.mtime])
-      return mkdirp(name, {fs:xfs}, stat)
+      return mkdirp(name, {fs: xfs}, stat)
     }
 
-    mkdirp(path.dirname(name), {fs:xfs}, function (err) {
+    mkdirp(path.dirname(name), {fs: xfs}, function (err) {
       if (err) return next(err)
       if (header.type === 'symlink') return onlink()
 
