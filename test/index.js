@@ -16,7 +16,7 @@ test('copy a -> copy/a', function (t) {
   rimraf.sync(b)
   tar.pack(a)
     .pipe(tar.extract(b))
-    .on('finish', function() {
+    .on('finish', function () {
       var files = fs.readdirSync(b)
       t.same(files.length, 1)
       t.same(files[0], 'hello.txt')
@@ -37,7 +37,7 @@ test('copy b -> copy/b', function (t) {
   rimraf.sync(b)
   tar.pack(a)
     .pipe(tar.extract(b))
-    .on('finish', function() {
+    .on('finish', function () {
       var files = fs.readdirSync(b)
       t.same(files.length, 1)
       t.same(files[0], 'a')
@@ -46,8 +46,8 @@ test('copy b -> copy/b', function (t) {
       t.same(fs.statSync(dirB).mode, fs.statSync(dirA).mode)
       t.same(fs.statSync(dirB).mtime.getTime(), fs.statSync(dirA).mtime.getTime())
       t.ok(fs.statSync(dirB).isDirectory())
-      var fileB = path.join(dirB, 'test.js')
-      var fileA = path.join(dirA, 'test.js')
+      var fileB = path.join(dirB, 'test.txt')
+      var fileA = path.join(dirA, 'test.txt')
       t.same(fs.readFileSync(fileB, 'utf-8'), fs.readFileSync(fileA, 'utf-8'))
       t.same(fs.statSync(fileB).mode, fs.statSync(fileA).mode)
       t.same(fs.statSync(fileB).mtime.getTime(), fs.statSync(fileA).mtime.getTime())
@@ -73,7 +73,7 @@ test('symlink', function (t) {
   rimraf.sync(b)
   tar.pack(a)
     .pipe(tar.extract(b))
-    .on('finish', function() {
+    .on('finish', function () {
       var files = fs.readdirSync(b).sort()
       t.same(files.length, 2)
       t.same(files[0], '.gitignore')
@@ -120,7 +120,6 @@ test('follow symlinks', function (t) {
     })
 })
 
-
 test('strip', function (t) {
   t.plan(2)
 
@@ -130,11 +129,11 @@ test('strip', function (t) {
   rimraf.sync(b)
 
   tar.pack(a)
-    .pipe(tar.extract(b, {strip:1}))
+    .pipe(tar.extract(b, {strip: 1}))
     .on('finish', function () {
       var files = fs.readdirSync(b).sort()
       t.same(files.length, 1)
-      t.same(files[0], 'test.js')
+      t.same(files[0], 'test.txt')
     })
 })
 
@@ -152,11 +151,11 @@ test('strip + map', function (t) {
   }
 
   tar.pack(a)
-    .pipe(tar.extract(b, {strip:1, map:uppercase}))
+    .pipe(tar.extract(b, {strip: 1, map: uppercase}))
     .on('finish', function () {
       var files = fs.readdirSync(b).sort()
       t.same(files.length, 1)
-      t.same(files[0], 'TEST.JS')
+      t.same(files[0], 'TEST.TXT')
     })
 })
 
@@ -169,19 +168,19 @@ test('map + dir + permissions', function (t) {
   rimraf.sync(b)
 
   var aWithMode = function (header) {
-    if(header.name === 'a') {
-      header.mode = 0700
+    if (header.name === 'a') {
+      header.mode = parseInt(700, 8)
     }
     return header
   }
 
   tar.pack(a)
-      .pipe(tar.extract(b, {map:aWithMode}))
+      .pipe(tar.extract(b, {map: aWithMode}))
       .on('finish', function () {
         var files = fs.readdirSync(b).sort()
         var stat = fs.statSync(path.join(b, 'a'))
         t.same(files.length, 1)
-        t.same(stat.mode & 0777, 0700)
+        t.same(stat.mode & parseInt(777, 8), parseInt(700, 8))
       })
 })
 
@@ -194,7 +193,7 @@ test('specific entries', function (t) {
   var entries = [ 'file1', 'sub-files/file3', 'sub-dir' ]
 
   rimraf.sync(b)
-  tar.pack(a, { entries: entries })
+  tar.pack(a, {entries: entries})
     .pipe(tar.extract(b))
     .on('finish', function () {
       var files = fs.readdirSync(b)
