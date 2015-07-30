@@ -17,10 +17,11 @@
   ],
   "devDependencies": {
     "rimraf": "^2.2.8",
+    "standard": "^4.5.4",
     "tape": "^3.0.0"
   },
   "scripts": {
-    "test": "tape test/index.js"
+    "test": "standard && tape test/index.js"
   },
   "bugs": {
     "url": "https://github.com/mafintosh/tar-fs/issues"
