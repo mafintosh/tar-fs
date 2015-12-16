@@ -63,7 +63,7 @@ exports.pack = function (cwd, opts) {
   var strict = opts.strict !== false
   var dmode = typeof opts.dmode === 'number' ? opts.dmode : 0
   var fmode = typeof opts.fmode === 'number' ? opts.fmode : 0
-  var pack = tar.pack()
+  var pack = opts.pack || tar.pack()
 
   if (opts.strip) map = strip(map, opts.strip)
 
@@ -164,7 +164,7 @@ exports.extract = function (cwd, opts) {
   var map = opts.map || noop
   var mapStream = opts.mapStream || echo
   var own = opts.chown !== false && !win32 && processGetuid() === 0
-  var extract = tar.extract()
+  var extract = opts.extract || tar.extract()
   var stack = []
   var now = new Date()
   var umask = typeof opts.umask === 'number' ? ~opts.umask : ~processUmask()
