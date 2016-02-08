@@ -7,6 +7,10 @@ var os = require('os')
 
 var win32 = os.platform() === 'win32'
 
+var mtime = function (st) {
+  return Math.floor(st.mtime.getTime() / 1000)
+}
+
 test('copy a -> copy/a', function (t) {
   t.plan(5)
 
@@ -24,7 +28,7 @@ test('copy a -> copy/a', function (t) {
       var fileA = path.join(a, files[0])
       t.same(fs.readFileSync(fileB, 'utf-8'), fs.readFileSync(fileA, 'utf-8'))
       t.same(fs.statSync(fileB).mode, fs.statSync(fileA).mode)
-      t.same(fs.statSync(fileB).mtime.getTime(), fs.statSync(fileA).mtime.getTime())
+      t.same(mtime(fs.statSync(fileB)), mtime(fs.statSync(fileA)))
     })
 })
 
@@ -44,13 +48,13 @@ test('copy b -> copy/b', function (t) {
       var dirB = path.join(b, files[0])
       var dirA = path.join(a, files[0])
       t.same(fs.statSync(dirB).mode, fs.statSync(dirA).mode)
-      t.same(fs.statSync(dirB).mtime.getTime(), fs.statSync(dirA).mtime.getTime())
+      t.same(mtime(fs.statSync(dirB)), mtime(fs.statSync(dirA)))
       t.ok(fs.statSync(dirB).isDirectory())
       var fileB = path.join(dirB, 'test.txt')
       var fileA = path.join(dirA, 'test.txt')
       t.same(fs.readFileSync(fileB, 'utf-8'), fs.readFileSync(fileA, 'utf-8'))
       t.same(fs.statSync(fileB).mode, fs.statSync(fileA).mode)
-      t.same(fs.statSync(fileB).mtime.getTime(), fs.statSync(fileA).mtime.getTime())
+      t.same(mtime(fs.statSync(fileB)), mtime(fs.statSync(fileA)))
     })
 })
 
@@ -82,7 +86,7 @@ test('symlink', function (t) {
       var linkA = path.join(a, 'link')
       var linkB = path.join(b, 'link')
 
-      t.same(fs.lstatSync(linkB).mtime.getTime(), fs.lstatSync(linkA).mtime.getTime())
+      t.same(mtime(fs.lstatSync(linkB)), mtime(fs.lstatSync(linkA)))
       t.same(fs.readlinkSync(linkB), fs.readlinkSync(linkA))
     })
 })
@@ -115,7 +119,7 @@ test('follow symlinks', function (t) {
       var file1 = path.join(b, '.gitignore')
       var file2 = path.join(b, 'link')
 
-      t.same(fs.lstatSync(file1).mtime.getTime(), fs.lstatSync(file2).mtime.getTime())
+      t.same(mtime(fs.lstatSync(file1)), mtime(fs.lstatSync(file2)))
       t.same(fs.readFileSync(file1), fs.readFileSync(file2))
     })
 })
