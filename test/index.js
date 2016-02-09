@@ -164,7 +164,7 @@ test('strip + map', function (t) {
 })
 
 test('map + dir + permissions', function (t) {
-  t.plan(2)
+  t.plan(win32 ? 1 : 2) // skip chmod test, it's not working like unix
 
   var a = path.join(__dirname, 'fixtures', 'b')
   var b = path.join(__dirname, 'fixtures', 'copy', 'a-perms')
@@ -184,7 +184,9 @@ test('map + dir + permissions', function (t) {
         var files = fs.readdirSync(b).sort()
         var stat = fs.statSync(path.join(b, 'a'))
         t.same(files.length, 1)
-        t.same(stat.mode & parseInt(777, 8), parseInt(700, 8))
+        if (!win32) {
+          t.same(stat.mode & parseInt(777, 8), parseInt(700, 8))
+        }
       })
 })
 
