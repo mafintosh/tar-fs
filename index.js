@@ -228,9 +228,9 @@ exports.extract = function (cwd, opts) {
 
     var stat = function (err) {
       if (err) return next(err)
-      if (win32) return next()
       utimes(name, header, function (err) {
         if (err) return next(err)
+        if (win32) return next()
         chperm(name, header, next)
       })
     }
