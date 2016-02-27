@@ -25,7 +25,9 @@ tar.pack('./my-directory').pipe(fs.createWriteStream('my-tarball.tar'))
 fs.createReadStream('my-other-tarball.tar').pipe(tar.extract('./my-other-directory'))
 ```
 
-To ignore various files when packing or extracting add a ignore function to the options. `ignore` is also an alias for `filter`.
+To ignore various files when packing or extracting add a ignore function to the options. `ignore`
+is also an alias for `filter`. Additionally you get `header` if you use ignore while extracting.
+That way you could also filter by metadata.
 
 ``` js
 var pack = tar.pack('./my-directory', {
@@ -37,6 +39,13 @@ var pack = tar.pack('./my-directory', {
 var extract = tar.extract('./my-other-directory', {
   ignore: function(name) {
     return path.extname(name) === '.bin' // ignore .bin files inside the tarball when extracing
+  }
+})
+
+var extractFilesDirs = tar.extract('./my-other-other-directory', {
+  ignore: function(_, header) {
+    // pass files & directories, ignore e.g. symlinks
+    return header.type !== 'file' && header.type !== 'directory'
   }
 })
 ```

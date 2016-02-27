@@ -221,7 +221,7 @@ exports.extract = function (cwd, opts) {
     header.name = normalize(header.name)
     var name = path.join(cwd, path.join('/', header.name))
 
-    if (ignore(name)) {
+    if (ignore(name, header)) {
       stream.resume()
       return next()
     }
