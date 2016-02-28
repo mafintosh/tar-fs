@@ -100,21 +100,23 @@ exports.pack = function (cwd, opts) {
       gid: stat.gid
     }
 
-    header = map(header) || header
-
     if (stat.isDirectory()) {
       header.size = 0
       header.type = 'directory'
+      header = map(header) || header
       return pack.entry(header, onnextentry)
     }
 
     if (stat.isSymbolicLink()) {
       header.size = 0
       header.type = 'symlink'
+      header = map(header) || header
       return onlink(filename, header)
     }
 
     // TODO: add fifo etc...
+
+    header = map(header) || header
 
     if (!stat.isFile()) {
       if (strict) return pack.destroy(new Error('unsupported type for ' + filename))

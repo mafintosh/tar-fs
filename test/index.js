@@ -213,3 +213,15 @@ test('specific entries', function (t) {
       t.same(subDir, ['file5'])
     })
 })
+
+test('check type while mapping header on packing', function (t) {
+  t.plan(3)
+
+  var e = path.join(__dirname, 'fixtures', 'e')
+
+  var checkHeaderType = function (header) {
+    if (header.name.indexOf('.') === -1) t.same(header.type, header.name)
+  }
+
+  tar.pack(e, { map: checkHeaderType })
+})
