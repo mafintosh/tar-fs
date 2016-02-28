@@ -1,6 +1,6 @@
 {
   "name": "tar-fs",
-  "version": "1.11.0",
+  "version": "1.11.1",
   "description": "filesystem bindings for tar-stream",
   "dependencies": {
     "mkdirp": "^0.5.0",
