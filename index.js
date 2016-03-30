@@ -76,7 +76,7 @@ exports.pack = function (cwd, opts) {
     fmode |= parseInt(222, 8)
   }
 
-  var onlink = function (filename, header) {
+  var onsymlink = function (filename, header) {
     xfs.readlink(path.join(cwd, filename), function (err, linkname) {
       if (err) return pack.destroy(err)
       header.linkname = normalize(linkname)
@@ -111,7 +111,7 @@ exports.pack = function (cwd, opts) {
       header.size = 0
       header.type = 'symlink'
       header = map(header) || header
-      return onlink(filename, header)
+      return onsymlink(filename, header)
     }
 
     // TODO: add fifo etc...
@@ -237,10 +237,17 @@ exports.extract = function (cwd, opts) {
       })
     }
 
-    var onlink = function () {
+    var onsymlink = function () {
       if (win32) return next() // skip symlinks on win for now before it can be tested
       xfs.unlink(name, function () {
         xfs.symlink(header.linkname, name, stat)
+      })
+    }
+
+    var onlink = function () {
+      if (win32) return next() // skip links on win for now before it can be tested
+      xfs.unlink(name, function () {
+        xfs.link(path.resolve(cwd, header.linkname), name, stat)
       })
     }
 
@@ -265,15 +272,18 @@ exports.extract = function (cwd, opts) {
 
     mkdirp(path.dirname(name), {fs: xfs}, function (err) {
       if (err) return next(err)
-      if (header.type === 'symlink') return onlink()
 
-      if (header.type !== 'file') {
-        if (strict) return next(new Error('unsupported type for ' + name + ' (' + header.type + ')'))
-        stream.resume()
-        return next()
+      switch (header.type) {
+        case 'file'   : return onfile()
+        case 'link'   : return onlink()
+        case 'symlink': return onsymlink()
       }
 
-      onfile()
+      if (strict)
+        return next(new Error('unsupported type for ' + name + ' (' + header.type + ')'))
+
+      stream.resume()
+      next()
     })
   })
 
