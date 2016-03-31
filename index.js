@@ -274,13 +274,12 @@ exports.extract = function (cwd, opts) {
       if (err) return next(err)
 
       switch (header.type) {
-        case 'file'   : return onfile()
-        case 'link'   : return onlink()
+        case 'file': return onfile()
+        case 'link': return onlink()
         case 'symlink': return onsymlink()
       }
 
-      if (strict)
-        return next(new Error('unsupported type for ' + name + ' (' + header.type + ')'))
+      if (strict) return next(new Error('unsupported type for ' + name + ' (' + header.type + ')'))
 
       stream.resume()
       next()
