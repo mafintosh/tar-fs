@@ -219,7 +219,6 @@ exports.extract = function (cwd, opts) {
   }
 
   extract.on('entry', function (header, stream, next) {
-    header = map(header) || header
     header.name = normalize(header.name)
     var name = path.join(cwd, path.join('/', header.name))
 
@@ -227,6 +226,9 @@ exports.extract = function (cwd, opts) {
       stream.resume()
       return next()
     }
+
+    header = map(header) || header
+    name = path.join(cwd, path.join('/', header.name))
 
     var stat = function (err) {
       if (err) return next(err)
