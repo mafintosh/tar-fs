@@ -46,7 +46,12 @@ var statAll = function (fs, stat, cwd, ignore, entries) {
 var strip = function (map, level) {
   return function (header) {
     header.name = header.name.split('/').slice(level).join('/')
-    if (header.linkname) header.linkname = header.linkname.split('/').slice(level).join('/')
+
+    const linkname = header.linkname
+    if (linkname && path.isAbsolute(linkname)) {
+      header.linkname = linkname.split('/').slice(level).join('/')
+    }
+
     return map(header)
   }
 }
