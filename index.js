@@ -48,7 +48,7 @@ var strip = function (map, level) {
     header.name = header.name.split('/').slice(level).join('/')
 
     var linkname = header.linkname
-    if (linkname && path.isAbsolute(linkname)) {
+    if (linkname && (header.type === 'link' || path.isAbsolute(linkname))) {
       header.linkname = linkname.split('/').slice(level).join('/')
     }
 
