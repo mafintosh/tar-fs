@@ -33,7 +33,7 @@ var statAll = function (fs, stat, cwd, ignore, entries, sort) {
       fs.readdir(nextAbs, function (err, files) {
         if (err) return callback(err)
 
-        if (sort)files.sort()
+        if (sort) files.sort()
         for (var i = 0; i < files.length; i++) {
           if (!ignore(path.join(cwd, next, files[i]))) queue.push(path.join(next, files[i]))
         }
