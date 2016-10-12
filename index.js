@@ -17,7 +17,7 @@ var normalize = !win32 ? echo : function (name) {
   return name.replace(/\\/g, '/').replace(/:/g, '_')
 }
 
-var statAll = function (fs, stat, cwd, ignore, entries) {
+var statAll = function (fs, stat, cwd, ignore, entries, sort) {
   var queue = entries || ['.']
 
   return function loop (callback) {
@@ -33,6 +33,7 @@ var statAll = function (fs, stat, cwd, ignore, entries) {
       fs.readdir(nextAbs, function (err, files) {
         if (err) return callback(err)
 
+        if (sort)files.sort()
         for (var i = 0; i < files.length; i++) {
           if (!ignore(path.join(cwd, next, files[i]))) queue.push(path.join(next, files[i]))
         }
@@ -64,7 +65,7 @@ exports.pack = function (cwd, opts) {
   var ignore = opts.ignore || opts.filter || noop
   var map = opts.map || noop
   var mapStream = opts.mapStream || echo
-  var statNext = statAll(xfs, opts.dereference ? xfs.stat : xfs.lstat, cwd, ignore, opts.entries)
+  var statNext = statAll(xfs, opts.dereference ? xfs.stat : xfs.lstat, cwd, ignore, opts.entries, opts.sort)
   var strict = opts.strict !== false
   var dmode = typeof opts.dmode === 'number' ? opts.dmode : 0
   var fmode = typeof opts.fmode === 'number' ? opts.fmode : 0
