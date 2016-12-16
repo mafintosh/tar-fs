@@ -67,6 +67,7 @@ exports.pack = function (cwd, opts) {
   var mapStream = opts.mapStream || echo
   var statNext = statAll(xfs, opts.dereference ? xfs.stat : xfs.lstat, cwd, ignore, opts.entries, opts.sort)
   var strict = opts.strict !== false
+  var umask = typeof opts.umask === 'number' ? ~opts.umask : ~processUmask()
   var dmode = typeof opts.dmode === 'number' ? opts.dmode : 0
   var fmode = typeof opts.fmode === 'number' ? opts.fmode : 0
   var pack = opts.pack || tar.pack()
@@ -98,7 +99,7 @@ exports.pack = function (cwd, opts) {
 
     var header = {
       name: normalize(filename),
-      mode: stat.mode | (stat.isDirectory() ? dmode : fmode),
+      mode: (stat.mode | (stat.isDirectory() ? dmode : fmode)) & umask,
       mtime: stat.mtime,
       size: stat.size,
       type: 'file',
@@ -216,7 +217,9 @@ exports.extract = function (cwd, opts) {
     var chown = link ? xfs.lchown : xfs.chown
 
     if (!chmod) return cb()
-    chmod(name, (header.mode | (header.type === 'directory' ? dmode : fmode)) & umask, function (err) {
+
+    var mode = (header.mode | (header.type === 'directory' ? dmode : fmode)) & umask
+    chmod(name, mode, function (err) {
       if (err) return cb(err)
       if (!own) return cb()
       if (!chown) return cb()
