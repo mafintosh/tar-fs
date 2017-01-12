@@ -109,6 +109,15 @@ var extract = tar.extract('./my-directory', {
 
 It can be useful to use `dmode` and `fmode` if you are packing/unpacking tarballs between *nix/windows to ensure that all files/directories unpacked are readable.
 
+Alternatively you can set `options.readable` and/or `options.writable` to set the dmode and fmode to readable/writable.
+
+``` js
+var extract = tar.extract('./my-directory', {
+  readable: true, // all dirs and files should be readable
+  writable: true, // all dirs and files should be writable
+})
+```
+
 Set `options.strict` to `false` if you want to ignore errors due to unsupported entry types (like device files)
 
 To dereference symlinks (pack the contents of the symlink instead of the link itself) set `options.dereference` to `true`.
