@@ -1,3 +1,4 @@
+var chownr = require('chownr')
 var tar = require('tar-stream')
 var pump = require('pump')
 var mkdirp = require('mkdirp')
@@ -285,10 +286,14 @@ exports.extract = function (cwd, opts) {
 
     if (header.type === 'directory') {
       stack.push([name, header.mtime])
-      return mkdirp(name, {fs: xfs}, stat)
+      return mkdirfix(name, {
+        fs: xfs, own: own, uid: header.uid, gid: header.gid
+      }, stat)
     }
 
-    mkdirp(path.dirname(name), {fs: xfs}, function (err) {
+    mkdirfix(path.dirname(name), {
+      fs: xfs, own: own, uid: header.uid, gid: header.gid
+    }, function (err) {
       if (err) return next(err)
 
       switch (header.type) {
@@ -305,4 +310,14 @@ exports.extract = function (cwd, opts) {
   })
 
   return extract
+}
+
+function mkdirfix (name, opts, cb) {
+  mkdirp(name, {fs: opts.xfs}, function (err, made) {
+    if (!err && made && opts.own) {
+      chownr(made, opts.uid, opts.gid, cb)
+    } else {
+      cb(err)
+    }
+  })
 }
