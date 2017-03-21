@@ -1,6 +1,6 @@
 {
   "name": "tar-fs",
-  "version": "1.15.1",
+  "version": "1.15.2",
   "description": "filesystem bindings for tar-stream",
   "dependencies": {
     "chownr": "^1.0.1",
