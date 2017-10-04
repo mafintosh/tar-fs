@@ -96,7 +96,7 @@ exports.pack = function (cwd, opts) {
   var onstat = function (err, filename, stat) {
     if (err) return pack.destroy(err)
     if (!filename) {
-      pack.finalize()
+      if (opts.finalize !== false) pack.finalize()
       return finish(pack)
     }
 
