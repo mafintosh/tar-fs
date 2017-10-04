@@ -255,3 +255,40 @@ test('finish callbacks', function (t) {
       t.end()
     })
 })
+
+test('not finalizing the pack', function (t) {
+  t.plan(2)
+
+  var a = path.join(__dirname, 'fixtures', 'a')
+  var b = path.join(__dirname, 'fixtures', 'b')
+
+  var out = path.join(__dirname, 'fixtures', 'copy', 'merged-packs')
+
+  rimraf.sync(out)
+
+  var prefixer = function (prefix) {
+    return function (header) {
+      header.name = path.join(prefix, header.name)
+      return header
+    }
+  }
+
+  tar.pack(a, {
+    map: prefixer('a-files'),
+    finalize: false,
+    finish: packB
+  })
+
+  function packB (pack) {
+    tar.pack(b, {pack: pack, map: prefixer('b-files')})
+      .pipe(tar.extract(out))
+      .on('finish', assertResults)
+  }
+
+  function assertResults () {
+    var containers = fs.readdirSync(out)
+    t.deepEqual(containers, ['a-files', 'b-files'])
+    var aFiles = fs.readdirSync(path.join(out, 'a-files'))
+    t.deepEqual(aFiles, ['hello.txt'])
+  }
+})
