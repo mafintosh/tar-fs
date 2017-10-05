@@ -130,6 +130,26 @@ Copying a directory with permissions and mtime intact is as simple as
 tar.pack('source-directory').pipe(tar.extract('dest-directory'))
 ```
 
+## Interaction with [`tar-stream`](https://github.com/mafintosh/tar-stream)
+
+Use `finalize: false` and the `finish` hook to
+leave the pack stream open for further entries (see
+[`tar-stream#pack`](https://github.com/mafintosh/tar-stream#packing)),
+and use `pack` to pass an existing pack stream.
+
+``` js
+var mypack = tar.pack('./my-directory', {
+  finalize: false,
+  finish: function(sameAsMypack) {
+    mypack.entry({name: 'generated-file.txt'}, "hello")
+    tar.pack('./other-directory', {
+      pack: sameAsMypack
+    })
+  }
+})
+```
+
+
 ## Performance
 
 Packing and extracting a 6.1 GB with 2496 directories and 2398 files yields the following results on my Macbook Air.

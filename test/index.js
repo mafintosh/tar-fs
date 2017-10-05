@@ -225,3 +225,70 @@ test('check type while mapping header on packing', function (t) {
 
   tar.pack(e, { map: checkHeaderType })
 })
+
+test('finish callbacks', function (t) {
+  t.plan(3)
+
+  var a = path.join(__dirname, 'fixtures', 'a')
+  var b = path.join(__dirname, 'fixtures', 'copy', 'a')
+
+  rimraf.sync(b)
+
+  var packEntries = 0
+  var extractEntries = 0
+
+  var countPackEntry = function (header) { packEntries++ }
+  var countExtractEntry = function (header) { extractEntries++ }
+
+  var pack
+  var onPackFinish = function (passedPack) {
+    t.equal(packEntries, 2, 'All entries have been packed') // 2 entries - the file and base directory
+    t.equal(passedPack, pack, 'The finish hook passes the pack')
+  }
+
+  var onExtractFinish = function () { t.equal(extractEntries, 2) }
+
+  pack = tar.pack(a, {map: countPackEntry, finish: onPackFinish})
+
+  pack.pipe(tar.extract(b, {map: countExtractEntry, finish: onExtractFinish}))
+    .on('finish', function () {
+      t.end()
+    })
+})
+
+test('not finalizing the pack', function (t) {
+  t.plan(2)
+
+  var a = path.join(__dirname, 'fixtures', 'a')
+  var b = path.join(__dirname, 'fixtures', 'b')
+
+  var out = path.join(__dirname, 'fixtures', 'copy', 'merged-packs')
+
+  rimraf.sync(out)
+
+  var prefixer = function (prefix) {
+    return function (header) {
+      header.name = path.join(prefix, header.name)
+      return header
+    }
+  }
+
+  tar.pack(a, {
+    map: prefixer('a-files'),
+    finalize: false,
+    finish: packB
+  })
+
+  function packB (pack) {
+    tar.pack(b, {pack: pack, map: prefixer('b-files')})
+      .pipe(tar.extract(out))
+      .on('finish', assertResults)
+  }
+
+  function assertResults () {
+    var containers = fs.readdirSync(out)
+    t.deepEqual(containers, ['a-files', 'b-files'])
+    var aFiles = fs.readdirSync(path.join(out, 'a-files'))
+    t.deepEqual(aFiles, ['hello.txt'])
+  }
+})

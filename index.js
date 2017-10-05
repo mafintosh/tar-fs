@@ -72,6 +72,7 @@ exports.pack = function (cwd, opts) {
   var dmode = typeof opts.dmode === 'number' ? opts.dmode : 0
   var fmode = typeof opts.fmode === 'number' ? opts.fmode : 0
   var pack = opts.pack || tar.pack()
+  var finish = opts.finish || noop
 
   if (opts.strip) map = strip(map, opts.strip)
 
@@ -94,7 +95,10 @@ exports.pack = function (cwd, opts) {
 
   var onstat = function (err, filename, stat) {
     if (err) return pack.destroy(err)
-    if (!filename) return pack.finalize()
+    if (!filename) {
+      if (opts.finalize !== false) pack.finalize()
+      return finish(pack)
+    }
 
     if (stat.isSocket()) return onnextentry() // tar does not support sockets...
 
@@ -308,6 +312,8 @@ exports.extract = function (cwd, opts) {
       next()
     })
   })
+
+  if (opts.finish) extract.on('finish', opts.finish)
 
   return extract
 }
