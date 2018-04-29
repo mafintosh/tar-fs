@@ -295,27 +295,43 @@ exports.extract = function (cwd, opts) {
       }, stat)
     }
 
-    mkdirfix(path.dirname(name), {
-      fs: xfs, own: own, uid: header.uid, gid: header.gid
-    }, function (err) {
+    var dir = path.dirname(name)
+
+    validate(xfs, dir, path.join(cwd, '.'), function (err, valid) {
       if (err) return next(err)
+      if (!valid) return next(new Error(dir + ' is not a valid path'))
 
-      switch (header.type) {
-        case 'file': return onfile()
-        case 'link': return onlink()
-        case 'symlink': return onsymlink()
-      }
+      mkdirfix(dir, {
+        fs: xfs, own: own, uid: header.uid, gid: header.gid
+      }, function (err) {
+        if (err) return next(err)
 
-      if (strict) return next(new Error('unsupported type for ' + name + ' (' + header.type + ')'))
+        switch (header.type) {
+          case 'file': return onfile()
+          case 'link': return onlink()
+          case 'symlink': return onsymlink()
+        }
 
-      stream.resume()
-      next()
+        if (strict) return next(new Error('unsupported type for ' + name + ' (' + header.type + ')'))
+
+        stream.resume()
+        next()
+      })
     })
   })
 
   if (opts.finish) extract.on('finish', opts.finish)
 
   return extract
+}
+
+function validate (fs, name, root, cb) {
+  if (name === root) return cb(null, true)
+  fs.lstat(name, function (err, st) {
+    if (err && err.code !== 'ENOENT') return cb(err)
+    if (err || st.isDirectory()) return validate(fs, path.join(name, '..'), root, cb)
+    cb(null, false)
+  })
 }
 
 function mkdirfix (name, opts, cb) {
