@@ -1,6 +1,7 @@
 var test = require('tape')
 var rimraf = require('rimraf')
 var tar = require('../index')
+var tarStream = require('tar-stream')
 var path = require('path')
 var fs = require('fs')
 var os = require('os')
@@ -306,6 +307,39 @@ test('do not extract invalid tar', function (t) {
       t.ok(/is not a valid path/i.test(err.message))
       fs.stat(path.join(out, '../bar'), function (err) {
         t.ok(err)
+        t.end()
+      })
+    })
+})
+
+test('no abs hardlink targets', function (t) {
+  var out = path.join(__dirname, 'fixtures', 'invalid')
+  var outside = path.join(__dirname, 'fixtures', 'outside')
+
+  rimraf.sync(out)
+
+  var s = tarStream.pack()
+
+  fs.writeFileSync(outside, 'something')
+
+  s.entry({
+    type: 'link',
+    name: 'link',
+    linkname: outside
+  })
+
+  s.entry({
+    name: 'link'
+  }, 'overwrite')
+
+  s.finalize()
+
+  s.pipe(tar.extract(out))
+    .on('error', function (err) {
+      t.ok(err, 'had error')
+      fs.readFile(outside, 'utf-8', function (err, str) {
+        t.error(err, 'no error')
+        t.same(str, 'something')
         t.end()
       })
     })
