@@ -26,7 +26,7 @@ var statAll = function (fs, stat, cwd, ignore, entries, sort) {
     var next = queue.shift()
     var nextAbs = path.join(cwd, next)
 
-    stat(nextAbs, function (err, stat) {
+    fs[stat](nextAbs, function (err, stat) {
       if (err) return callback(err)
 
       if (!stat.isDirectory()) return callback(null, next, stat)
@@ -66,7 +66,7 @@ exports.pack = function (cwd, opts) {
   var ignore = opts.ignore || opts.filter || noop
   var map = opts.map || noop
   var mapStream = opts.mapStream || echo
-  var statNext = statAll(xfs, opts.dereference ? xfs.stat : xfs.lstat, cwd, ignore, opts.entries, opts.sort)
+  var statNext = statAll(xfs, opts.dereference ? 'stat' : 'lstat', cwd, ignore, opts.entries, opts.sort)
   var strict = opts.strict !== false
   var umask = typeof opts.umask === 'number' ? ~opts.umask : ~processUmask()
   var dmode = typeof opts.dmode === 'number' ? opts.dmode : 0
