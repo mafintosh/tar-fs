@@ -335,7 +335,7 @@ function validate (fs, name, root, cb) {
 }
 
 function mkdirfix (name, opts, cb) {
-  mkdirp(name, {fs: opts.xfs}, function (err, made) {
+  mkdirp(name, {fs: opts.fs}, function (err, made) {
     if (!err && made && opts.own) {
       chownr(made, opts.uid, opts.gid, cb)
     } else {
