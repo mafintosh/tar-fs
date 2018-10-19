@@ -47,11 +47,11 @@ var statAll = function (fs, stat, cwd, ignore, entries, sort) {
 
 var strip = function (map, level) {
   return function (header) {
-    header.name = header.name.split('/').slice(level).join('/')
+    header.name = header.name.split(path.sep).slice(level).join(path.sep)
 
     var linkname = header.linkname
     if (linkname && (header.type === 'link' || path.isAbsolute(linkname))) {
-      header.linkname = linkname.split('/').slice(level).join('/')
+      header.linkname = linkname.split(path.sep).slice(level).join(path.sep)
     }
 
     return map(header)
