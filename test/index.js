@@ -312,6 +312,24 @@ test('do not extract invalid tar', function (t) {
     })
 })
 
+test('extract tar with Windows backslash path separator', function (t) {
+  var a = path.join(__dirname, 'fixtures', 'backslash-sep.tgz')
+
+  var out = path.join(__dirname, 'fixtures', 'backslash-sep')
+
+  rimraf.sync(out)
+
+  fs.createReadStream(a)
+    .pipe(tar.extract(out))
+    .on('finish', function () {
+      var files = fs.readdirSync(out).sort()
+      t.same(files.length, 2)
+      t.same(files[0], 'index.js')
+      t.same(files[1], 'package.json')
+      t.end()
+    })
+})
+
 test('no abs hardlink targets', function (t) {
   var out = path.join(__dirname, 'fixtures', 'invalid')
   var outside = path.join(__dirname, 'fixtures', 'outside')
