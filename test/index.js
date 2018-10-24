@@ -192,12 +192,13 @@ test('map + dir + permissions', function (t) {
 })
 
 test('specific entries', function (t) {
-  t.plan(6)
+  t.plan(7)
 
   var a = path.join(__dirname, 'fixtures', 'd')
   var b = path.join(__dirname, 'fixtures', 'copy', 'd-entries')
 
   var entries = [ 'file1', 'sub-files/file3', 'sub-dir' ]
+  var clonedEntries = entries.slice()
 
   rimraf.sync(b)
   tar.pack(a, {entries: entries})
@@ -212,6 +213,7 @@ test('specific entries', function (t) {
       t.same(subFiles, ['file3'])
       var subDir = fs.readdirSync(path.join(b, 'sub-dir'))
       t.same(subDir, ['file5'])
+      t.same(entries, clonedEntries)
     })
 })
 
