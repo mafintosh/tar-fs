@@ -3,10 +3,10 @@
   "version": "1.16.3",
   "description": "filesystem bindings for tar-stream",
   "dependencies": {
-    "chownr": "^1.0.1",
+    "chownr": "^1.1.1",
     "mkdirp": "^0.5.1",
-    "pump": "^1.0.0",
-    "tar-stream": "^1.1.2"
+    "pump": "^3.0.0",
+    "tar-stream": "^2.0.0"
   },
   "keywords": [
     "tar",
@@ -17,9 +17,9 @@
     "stream"
   ],
   "devDependencies": {
-    "rimraf": "^2.2.8",
-    "standard": "^4.5.4",
-    "tape": "^3.0.0"
+    "rimraf": "^2.6.3",
+    "standard": "^12.0.1",
+    "tape": "^4.9.2"
   },
   "scripts": {
     "test": "standard && tape test/index.js"
