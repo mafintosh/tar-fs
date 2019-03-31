@@ -18,7 +18,7 @@ var normalize = !win32 ? echo : function (name) {
   return name.replace(/\\/g, '/').replace(/[:?<>|]/g, '_')
 }
 
-var statAll = function (fs, stat, cwd, ignore, entries, sort) {
+var statAll = function (fs, stat, cwd, ignore, entries, sort, ignoreStatError) {
   var queue = entries || ['.']
 
   return function loop (callback) {
@@ -27,6 +27,7 @@ var statAll = function (fs, stat, cwd, ignore, entries, sort) {
     var nextAbs = path.join(cwd, next)
 
     stat(nextAbs, function (err, stat) {
+      if (err && ignoreStatError(nextAbs, err)) return loop(callback)
       if (err) return callback(err)
 
       if (!stat.isDirectory()) return callback(null, next, stat)
@@ -66,7 +67,8 @@ exports.pack = function (cwd, opts) {
   var ignore = opts.ignore || opts.filter || noop
   var map = opts.map || noop
   var mapStream = opts.mapStream || echo
-  var statNext = statAll(xfs, opts.dereference ? xfs.stat : xfs.lstat, cwd, ignore, opts.entries, opts.sort)
+  var ignoreStatError = opts.ignoreStatError || noop
+  var statNext = statAll(xfs, opts.dereference ? xfs.stat : xfs.lstat, cwd, ignore, opts.entries, opts.sort, ignoreStatError)
   var strict = opts.strict !== false
   var umask = typeof opts.umask === 'number' ? ~opts.umask : ~processUmask()
   var dmode = typeof opts.dmode === 'number' ? opts.dmode : 0
