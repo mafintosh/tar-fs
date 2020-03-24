@@ -4,7 +4,7 @@
   "description": "filesystem bindings for tar-stream",
   "dependencies": {
     "chownr": "^1.1.1",
-    "mkdirp": "^0.5.1",
+    "mkdirp-classic": "^0.5.2",
     "pump": "^3.0.0",
     "tar-stream": "^2.0.0"
   },
