@@ -19,7 +19,7 @@ var normalize = !win32 ? echo : function (name) {
 }
 
 var statAll = function (fs, stat, cwd, ignore, entries, sort) {
-  var queue = entries || ['.']
+  var queue = Array.isArray(entries) ? entries.slice() : ['.']
 
   return function loop (callback) {
     if (!queue.length) return callback()
