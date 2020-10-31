@@ -224,15 +224,17 @@ exports.extract = function (cwd, opts) {
     var chown = link ? xfs.lchown : xfs.chown
     /* eslint-enable node/no-deprecated-api */
 
-    if (!chmod) return cb()
-
     var mode = (header.mode | (header.type === 'directory' ? dmode : fmode)) & umask
-    chmod(name, mode, function (err) {
-      if (err) return cb(err)
-      if (!own) return cb()
-      if (!chown) return cb()
-      chown(name, header.uid, header.gid, cb)
-    })
+
+    if(chown && own) {
+      chown(name, header.uid, header.gid, function(err) {
+        if (err) return cb(err)
+        if (!chmod) return cb();
+        chmod(name, mode, cb);
+      });
+    } else if (chmod) {
+      chmod(name, mode, cb);
+    }
   }
 
   extract.on('entry', function (header, stream, next) {
