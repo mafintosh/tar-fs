@@ -234,6 +234,8 @@ exports.extract = function (cwd, opts) {
       })
     } else if (chmod) {
       chmod(name, mode, cb)
+    } else {
+      cb()
     }
   }
 
