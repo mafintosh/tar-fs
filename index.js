@@ -226,14 +226,14 @@ exports.extract = function (cwd, opts) {
 
     var mode = (header.mode | (header.type === 'directory' ? dmode : fmode)) & umask
 
-    if(chown && own) {
-      chown(name, header.uid, header.gid, function(err) {
+    if (chown && own) {
+      chown(name, header.uid, header.gid, function (err) {
         if (err) return cb(err)
-        if (!chmod) return cb();
-        chmod(name, mode, cb);
-      });
+        if (!chmod) return cb()
+        chmod(name, mode, cb)
+      })
     } else if (chmod) {
-      chmod(name, mode, cb);
+      chmod(name, mode, cb)
     }
   }
 
