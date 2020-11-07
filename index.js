@@ -68,7 +68,7 @@ exports.pack = function (cwd, opts) {
   var mapStream = opts.mapStream || echo
   var statNext = statAll(xfs, opts.dereference ? xfs.stat : xfs.lstat, cwd, ignore, opts.entries, opts.sort)
   var strict = opts.strict !== false
-  var umask = typeof opts.umask === 'number' ? ~opts.umask : ~processUmask()
+  var umask = typeof opts.umask === 'number' ? ~opts.umask : -1
   var dmode = typeof opts.dmode === 'number' ? opts.dmode : 0
   var fmode = typeof opts.fmode === 'number' ? opts.fmode : 0
   var pack = opts.pack || tar.pack()
