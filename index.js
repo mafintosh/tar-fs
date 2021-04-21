@@ -1,4 +1,3 @@
-var chownr = require('chownr')
 var tar = require('tar-stream')
 var pump = require('pump')
 var mkdirp = require('mkdirp-classic')
@@ -238,6 +237,26 @@ exports.extract = function (cwd, opts) {
     }
   }
 
+  function mkdirfix (name, opts, cb) {
+    // when mkdir is called on an existing directory, the permissions
+    // will be overwritten (?), to avoid this we check for its existance first
+    xfs.stat(name, function (err) {
+      if (!err) {
+        cb(null)
+      } else if (err.code === 'ENOENT') {
+        mkdirp(name, { fs: opts.fs, mode: opts.mode }, function (err, made) {
+          if (!err) {
+            chperm(name, opts, cb)
+          } else {
+            cb(err)
+          }
+        })
+      } else {
+        cb(err)
+      }
+    })
+  }
+
   extract.on('entry', function (header, stream, next) {
     header = map(header) || header
     header.name = normalize(header.name)
@@ -297,7 +316,11 @@ exports.extract = function (cwd, opts) {
     if (header.type === 'directory') {
       stack.push([name, header.mtime])
       return mkdirfix(name, {
-        fs: xfs, own: own, uid: header.uid, gid: header.gid
+        fs: xfs,
+        own: own,
+        uid: header.uid,
+        gid: header.gid,
+        mode: header.mode
       }, stat)
     }
 
@@ -308,7 +331,14 @@ exports.extract = function (cwd, opts) {
       if (!valid) return next(new Error(dir + ' is not a valid path'))
 
       mkdirfix(dir, {
-        fs: xfs, own: own, uid: header.uid, gid: header.gid
+        fs: xfs,
+        own: own,
+        uid: header.uid,
+        gid: header.gid,
+        // normally, the folders with rights and owner should be part of the TAR file
+        // if this is not the case, create folder for same user as file and with
+        // standard permissions of 0o755 (rwxr-xr-x)
+        mode: 0o755
       }, function (err) {
         if (err) return next(err)
 
@@ -337,15 +367,5 @@ function validate (fs, name, root, cb) {
     if (err && err.code !== 'ENOENT') return cb(err)
     if (err || st.isDirectory()) return validate(fs, path.join(name, '..'), root, cb)
     cb(null, false)
-  })
-}
-
-function mkdirfix (name, opts, cb) {
-  mkdirp(name, { fs: opts.fs }, function (err, made) {
-    if (!err && made && opts.own) {
-      chownr(made, opts.uid, opts.gid, cb)
-    } else {
-      cb(err)
-    }
   })
 }
