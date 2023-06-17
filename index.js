@@ -307,6 +307,7 @@ exports.extract = function extract (cwd, opts) {
 }
 
 function validate (fs, name, root, cb) {
+  console.log('validate', name, root)
   if (name === root) return cb(null, true)
   fs.lstat(name, function (err, st) {
     if (err && err.code === 'ENOENT') return validate(fs, path.join(name, '..'), root, cb)
