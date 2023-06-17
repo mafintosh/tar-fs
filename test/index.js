@@ -322,6 +322,12 @@ test('do not extract invalid tar', function (t) {
 })
 
 test('no abs hardlink targets', function (t) {
+  if (win32) { // no symlink support on win32 currently. TODO: test if this can be enabled somehow
+    t.plan(1)
+    t.ok(true)
+    return
+  }
+
   t.plan(3)
 
   const out = path.join(__dirname, 'fixtures', 'invalid')
