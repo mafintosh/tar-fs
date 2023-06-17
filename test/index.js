@@ -293,7 +293,7 @@ test('not finalizing the pack', function (t) {
   }
 })
 
-test.solo('do not extract invalid tar', function (t) {
+test('do not extract invalid tar', function (t) {
   t.plan(2)
 
   const a = path.join(__dirname, 'fixtures', 'invalid.tar')
