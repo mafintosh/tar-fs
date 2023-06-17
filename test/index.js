@@ -1,4 +1,4 @@
-const test = require('tape')
+const test = require('brittle')
 const rimraf = require('rimraf')
 const tar = require('../index')
 const tarStream = require('tar-stream')
@@ -23,13 +23,13 @@ test('copy a -> copy/a', function (t) {
     .pipe(tar.extract(b))
     .on('finish', function () {
       const files = fs.readdirSync(b)
-      t.same(files.length, 1)
-      t.same(files[0], 'hello.txt')
+      t.is(files.length, 1)
+      t.is(files[0], 'hello.txt')
       const fileB = path.join(b, files[0])
       const fileA = path.join(a, files[0])
-      t.same(fs.readFileSync(fileB, 'utf-8'), fs.readFileSync(fileA, 'utf-8'))
-      t.same(fs.statSync(fileB).mode, fs.statSync(fileA).mode)
-      t.same(mtime(fs.statSync(fileB)), mtime(fs.statSync(fileA)))
+      t.alike(fs.readFileSync(fileB, 'utf-8'), fs.readFileSync(fileA, 'utf-8'))
+      t.alike(fs.statSync(fileB).mode, fs.statSync(fileA).mode)
+      t.alike(mtime(fs.statSync(fileB)), mtime(fs.statSync(fileA)))
     })
 })
 
@@ -44,18 +44,18 @@ test('copy b -> copy/b', function (t) {
     .pipe(tar.extract(b))
     .on('finish', function () {
       const files = fs.readdirSync(b)
-      t.same(files.length, 1)
-      t.same(files[0], 'a')
+      t.is(files.length, 1)
+      t.is(files[0], 'a')
       const dirB = path.join(b, files[0])
       const dirA = path.join(a, files[0])
-      t.same(fs.statSync(dirB).mode, fs.statSync(dirA).mode)
-      t.same(mtime(fs.statSync(dirB)), mtime(fs.statSync(dirA)))
+      t.alike(fs.statSync(dirB).mode, fs.statSync(dirA).mode)
+      t.alike(mtime(fs.statSync(dirB)), mtime(fs.statSync(dirA)))
       t.ok(fs.statSync(dirB).isDirectory())
       const fileB = path.join(dirB, 'test.txt')
       const fileA = path.join(dirA, 'test.txt')
-      t.same(fs.readFileSync(fileB, 'utf-8'), fs.readFileSync(fileA, 'utf-8'))
-      t.same(fs.statSync(fileB).mode, fs.statSync(fileA).mode)
-      t.same(mtime(fs.statSync(fileB)), mtime(fs.statSync(fileA)))
+      t.alike(fs.readFileSync(fileB, 'utf-8'), fs.readFileSync(fileA, 'utf-8'))
+      t.alike(fs.statSync(fileB).mode, fs.statSync(fileA).mode)
+      t.alike(mtime(fs.statSync(fileB)), mtime(fs.statSync(fileA)))
     })
 })
 
@@ -80,15 +80,15 @@ test('symlink', function (t) {
     .pipe(tar.extract(b))
     .on('finish', function () {
       const files = fs.readdirSync(b).sort()
-      t.same(files.length, 2)
-      t.same(files[0], '.gitignore')
-      t.same(files[1], 'link')
+      t.is(files.length, 2)
+      t.is(files[0], '.gitignore')
+      t.is(files[1], 'link')
 
       const linkA = path.join(a, 'link')
       const linkB = path.join(b, 'link')
 
-      t.same(mtime(fs.lstatSync(linkB)), mtime(fs.lstatSync(linkA)))
-      t.same(fs.readlinkSync(linkB), fs.readlinkSync(linkA))
+      t.alike(mtime(fs.lstatSync(linkB)), mtime(fs.lstatSync(linkA)))
+      t.alike(fs.readlinkSync(linkB), fs.readlinkSync(linkA))
     })
 })
 
@@ -113,15 +113,15 @@ test('follow symlinks', function (t) {
     .pipe(tar.extract(b))
     .on('finish', function () {
       const files = fs.readdirSync(b).sort()
-      t.same(files.length, 2)
-      t.same(files[0], '.gitignore')
-      t.same(files[1], 'link')
+      t.is(files.length, 2)
+      t.is(files[0], '.gitignore')
+      t.is(files[1], 'link')
 
       const file1 = path.join(b, '.gitignore')
       const file2 = path.join(b, 'link')
 
-      t.same(mtime(fs.lstatSync(file1)), mtime(fs.lstatSync(file2)))
-      t.same(fs.readFileSync(file1), fs.readFileSync(file2))
+      t.alike(mtime(fs.lstatSync(file1)), mtime(fs.lstatSync(file2)))
+      t.alike(fs.readFileSync(file1), fs.readFileSync(file2))
     })
 })
 
@@ -137,8 +137,8 @@ test('strip', function (t) {
     .pipe(tar.extract(b, { strip: 1 }))
     .on('finish', function () {
       const files = fs.readdirSync(b).sort()
-      t.same(files.length, 1)
-      t.same(files[0], 'test.txt')
+      t.is(files.length, 1)
+      t.is(files[0], 'test.txt')
     })
 })
 
@@ -159,8 +159,8 @@ test('strip + map', function (t) {
     .pipe(tar.extract(b, { strip: 1, map: uppercase }))
     .on('finish', function () {
       const files = fs.readdirSync(b).sort()
-      t.same(files.length, 1)
-      t.same(files[0], 'TEST.TXT')
+      t.is(files.length, 1)
+      t.is(files[0], 'TEST.TXT')
     })
 })
 
@@ -184,9 +184,9 @@ test('map + dir + permissions', function (t) {
     .on('finish', function () {
       const files = fs.readdirSync(b).sort()
       const stat = fs.statSync(path.join(b, 'a'))
-      t.same(files.length, 1)
+      t.is(files.length, 1)
       if (!win32) {
-        t.same(stat.mode & parseInt(777, 8), parseInt(700, 8))
+        t.is(stat.mode & parseInt(777, 8), parseInt(700, 8))
       }
     })
 })
@@ -204,14 +204,14 @@ test('specific entries', function (t) {
     .pipe(tar.extract(b))
     .on('finish', function () {
       const files = fs.readdirSync(b)
-      t.same(files.length, 3)
-      t.notSame(files.indexOf('file1'), -1)
-      t.notSame(files.indexOf('sub-files'), -1)
-      t.notSame(files.indexOf('sub-dir'), -1)
+      t.is(files.length, 3)
+      t.not(files.indexOf('file1'), -1)
+      t.not(files.indexOf('sub-files'), -1)
+      t.not(files.indexOf('sub-dir'), -1)
       const subFiles = fs.readdirSync(path.join(b, 'sub-files'))
-      t.same(subFiles, ['file3'])
+      t.alike(subFiles, ['file3'])
       const subDir = fs.readdirSync(path.join(b, 'sub-dir'))
-      t.same(subDir, ['file5'])
+      t.alike(subDir, ['file5'])
     })
 })
 
@@ -221,7 +221,7 @@ test('check type while mapping header on packing', function (t) {
   const e = path.join(__dirname, 'fixtures', 'e')
 
   const checkHeaderType = function (header) {
-    if (header.name.indexOf('.') === -1) t.same(header.type, header.name)
+    if (header.name.indexOf('.') === -1) t.is(header.type, header.name)
   }
 
   tar.pack(e, { map: checkHeaderType })
@@ -242,11 +242,11 @@ test('finish callbacks', function (t) {
   const countExtractEntry = function (header) { extractEntries++ }
 
   const onPackFinish = function (passedPack) {
-    t.equal(packEntries, 2, 'All entries have been packed') // 2 entries - the file and base directory
-    t.equal(passedPack, pack, 'The finish hook passes the pack')
+    t.is(packEntries, 2, 'All entries have been packed') // 2 entries - the file and base directory
+    t.is(passedPack, pack, 'The finish hook passes the pack')
   }
 
-  const onExtractFinish = function () { t.equal(extractEntries, 2) }
+  const onExtractFinish = function () { t.is(extractEntries, 2) }
 
   const pack = tar.pack(a, { map: countPackEntry, finish: onPackFinish })
 
@@ -287,13 +287,15 @@ test('not finalizing the pack', function (t) {
 
   function assertResults () {
     const containers = fs.readdirSync(out)
-    t.deepEqual(containers, ['a-files', 'b-files'])
+    t.alike(containers, ['a-files', 'b-files'])
     const aFiles = fs.readdirSync(path.join(out, 'a-files'))
-    t.deepEqual(aFiles, ['hello.txt'])
+    t.alike(aFiles, ['hello.txt'])
   }
 })
 
 test('do not extract invalid tar', function (t) {
+  t.plan(2)
+
   const a = path.join(__dirname, 'fixtures', 'invalid.tar')
 
   const out = path.join(__dirname, 'fixtures', 'invalid')
@@ -306,12 +308,13 @@ test('do not extract invalid tar', function (t) {
       t.ok(/is not a valid path/i.test(err.message))
       fs.stat(path.join(out, '../bar'), function (err) {
         t.ok(err)
-        t.end()
       })
     })
 })
 
 test('no abs hardlink targets', function (t) {
+  t.plan(3)
+
   const out = path.join(__dirname, 'fixtures', 'invalid')
   const outside = path.join(__dirname, 'fixtures', 'outside')
 
@@ -337,9 +340,8 @@ test('no abs hardlink targets', function (t) {
     .on('error', function (err) {
       t.ok(err, 'had error')
       fs.readFile(outside, 'utf-8', function (err, str) {
-        t.error(err, 'no error')
-        t.same(str, 'something')
-        t.end()
+        t.absent(err, 'no error')
+        t.is(str, 'something')
       })
     })
 })
