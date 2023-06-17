@@ -309,8 +309,8 @@ exports.extract = function extract (cwd, opts) {
 function validate (fs, name, root, cb) {
   if (name === root) return cb(null, true)
   fs.lstat(name, function (err, st) {
-    if (err && (err.code !== 'ENOENT' && (!win32 || err.code !== 'EPERM'))) return cb(err)
-    if (err || st.isDirectory()) return validate(fs, path.join(name, '..'), root, cb)
+    if (err && err.code !== 'ENOENT') return cb(err)
+    if (st && st.isDirectory()) return validate(fs, path.join(name, '..'), root, cb)
     cb(null, false)
   })
 }
