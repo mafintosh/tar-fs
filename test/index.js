@@ -191,7 +191,7 @@ test('map + dir + permissions', function (t) {
     })
 })
 
-test.solo('specific entries', function (t) {
+test('specific entries', function (t) {
   t.plan(6)
 
   const a = path.join(__dirname, 'fixtures', 'd')
@@ -293,7 +293,7 @@ test('not finalizing the pack', function (t) {
   }
 })
 
-test('do not extract invalid tar', function (t) {
+test.solo('do not extract invalid tar', function (t) {
   t.plan(2)
 
   const a = path.join(__dirname, 'fixtures', 'invalid.tar')
