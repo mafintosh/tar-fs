@@ -156,6 +156,7 @@ exports.extract = function extract (cwd, opts) {
     header.name = normalize(header.name)
 
     const name = path.join(cwd, path.join('/', header.name))
+console.log(header, name)
 
     if (ignore(name, header)) {
       stream.resume()
