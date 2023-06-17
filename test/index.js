@@ -293,7 +293,13 @@ test('not finalizing the pack', function (t) {
   }
 })
 
-test.solo('do not extract invalid tar', function (t) {
+test('do not extract invalid tar', function (t) {
+  if (win32) { // no symlink support on win32 currently. TODO: test if this can be enabled somehow
+    t.plan(1)
+    t.ok(true)
+    return
+  }
+
   t.plan(2)
 
   const a = path.join(__dirname, 'fixtures', 'invalid.tar')

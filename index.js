@@ -156,7 +156,6 @@ exports.extract = function extract (cwd, opts) {
     header.name = normalize(header.name)
 
     const name = path.join(cwd, path.join('/', header.name))
-    console.log(header, name)
 
     if (ignore(name, header)) {
       stream.resume()
@@ -308,14 +307,11 @@ exports.extract = function extract (cwd, opts) {
 }
 
 function validate (fs, name, root, cb) {
-  console.log('validate', name, root)
   if (name === root) return cb(null, true)
   fs.lstat(name, function (err, st) {
     if (err && err.code === 'ENOENT') return validate(fs, path.join(name, '..'), root, cb)
     else if (err) return cb(err)
-    console.log('lookup', name)
-    if (st.isDirectory()) return cb(null, true)
-    cb(null, false)
+    cb(null, st.isDirectory())
   })
 }
 
