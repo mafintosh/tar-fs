@@ -311,6 +311,7 @@ function validate (fs, name, root, cb) {
   fs.lstat(name, function (err, st) {
     if (err && err.code === 'ENOENT') return validate(fs, path.join(name, '..'), root, cb)
     else if (err) return cb(err)
+    console.log('lookup', name)
     if (st.isDirectory()) return cb(null, true)
     cb(null, false)
   })

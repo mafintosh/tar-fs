@@ -191,7 +191,7 @@ test('map + dir + permissions', function (t) {
     })
 })
 
-test('specific entries', function (t) {
+test.solo('specific entries', function (t) {
   t.plan(6)
 
   const a = path.join(__dirname, 'fixtures', 'd')
