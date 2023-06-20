@@ -326,7 +326,8 @@ function normalize (name) {
 }
 
 function statAll (fs, stat, cwd, ignore, entries, sort) {
-  const queue = (entries || ['.']).slice(0)
+  if (!entries) entries = ['.']
+  const queue = entries.slice(0)
 
   return function loop (callback) {
     if (!queue.length) return callback(null)
@@ -336,7 +337,7 @@ function statAll (fs, stat, cwd, ignore, entries, sort) {
 
     stat.call(fs, nextAbs, function (err, stat) {
       // ignore errors if the files were deleted while buffering
-      if (err) return callback(err.code === 'ENOENT' ? null : err)
+      if (err) return callback(entries.indexOf(next) === -1 && err.code === 'ENOENT' ? null : err)
 
       if (!stat.isDirectory()) return callback(null, next, stat)
 
