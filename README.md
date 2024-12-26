@@ -102,8 +102,8 @@ Set `options.fmode` and `options.dmode` to ensure that files/directories extract
 
 ``` js
 const extract = tar.extract('./my-directory', {
-  dmode: parseInt(555, 8), // all dirs should be readable
-  fmode: parseInt(444, 8) // all files should be readable
+  dmode: 0o555, // all dirs should be readable
+  fmode: 0o444 // all files should be readable
 })
 ```
 
