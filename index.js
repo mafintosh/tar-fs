@@ -260,6 +260,9 @@ exports.extract = function (cwd, opts) {
     var onsymlink = function () {
       if (win32) return next() // skip symlinks on win for now before it can be tested
       xfs.unlink(name, function () {
+        var dst = path.resolve(path.dirname(name), header.linkname)
+        if (!dst.startsWith(path.resolve(cwd))) return next(new Error(name + ' is not a valid symlink'))
+
         xfs.symlink(header.linkname, name, stat)
       })
     }

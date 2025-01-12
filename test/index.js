@@ -304,7 +304,7 @@ test('do not extract invalid tar', function (t) {
   fs.createReadStream(a)
     .pipe(tar.extract(out))
     .on('error', function (err) {
-      t.ok(/is not a valid path/i.test(err.message))
+      t.ok(/is not a valid symlink/i.test(err.message))
       fs.stat(path.join(out, '../bar'), function (err) {
         t.ok(err)
         t.end()
