@@ -272,13 +272,17 @@ exports.extract = function (cwd, opts) {
       xfs.unlink(name, function () {
         var srcpath = path.join(cwd, path.join('/', header.linkname))
 
-        xfs.link(srcpath, name, function (err) {
-          if (err && err.code === 'EPERM' && opts.hardlinkAsFilesFallback) {
-            stream = xfs.createReadStream(srcpath)
-            return onfile()
-          }
+        xfs.realpath(srcpath, function (err, dst) {
+          if (err || !dst.startsWith(path.resolve(cwd))) return next(new Error(name + ' is not a valid hardlink'))
 
-          stat(err)
+          xfs.link(dst, name, function (err) {
+            if (err && err.code === 'EPERM' && opts.hardlinkAsFilesFallback) {
+              stream = xfs.createReadStream(srcpath)
+              return onfile()
+            }
+
+            stat(err)
+          })
         })
       })
     }
