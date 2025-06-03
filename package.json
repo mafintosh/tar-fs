@@ -8,7 +8,8 @@
   },
   "optionalDependencies": {
     "bare-fs": "^4.0.1",
-    "bare-path": "^3.0.0"
+    "bare-path": "^3.0.0",
+    "bare-process": "^4.2.1"
   },
   "imports": {
     "fs": {
@@ -18,6 +19,10 @@
     "path": {
       "bare": "bare-path",
       "default": "path"
+    },
+    "process": {
+      "bare": "bare-process",
+      "default": "process"
     }
   },
   "files": [

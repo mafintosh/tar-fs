@@ -1,3 +1,4 @@
+const process = require('process')
 const tar = require('tar-stream')
 const pump = require('pump')
 const fs = require('fs')
