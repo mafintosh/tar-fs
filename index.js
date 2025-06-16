@@ -3,7 +3,7 @@ const pump = require('pump')
 const fs = require('fs')
 const path = require('path')
 
-const win32 = (global.Bare?.platform || process.platform) === 'win32'
+const win32 = (global.Bare ? global.Bare.platform : process.platform) === 'win32'
 
 exports.pack = function pack (cwd, opts) {
   if (!cwd) cwd = '.'
@@ -109,11 +109,11 @@ function head (list) {
 }
 
 function processGetuid () {
-  return process.getuid ? process.getuid() : -1
+  return (!global.Bare && process.getuid) ? process.getuid() : -1
 }
 
 function processUmask () {
-  return process.umask ? process.umask() : 0
+  return (!global.Bare && process.umask) ? process.umask() : 0
 }
 
 exports.extract = function extract (cwd, opts) {
