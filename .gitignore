@@ -2,3 +2,5 @@ node_modules
 test/fixtures/copy
 test/fixtures/invalid
 test/fixtures/outside
+test/fixtures/valid
+.DS_Store

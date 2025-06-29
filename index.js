@@ -131,6 +131,7 @@ exports.extract = function extract (cwd, opts) {
   const now = new Date()
   const umask = typeof opts.umask === 'number' ? ~opts.umask : ~processUmask()
   const strict = opts.strict !== false
+  const validateSymLinks = opts.validateSymlinks !== false
 
   let map = opts.map || noop
   let dmode = typeof opts.dmode === 'number' ? opts.dmode : 0
@@ -219,7 +220,7 @@ exports.extract = function extract (cwd, opts) {
       if (win32) return next() // skip symlinks on win for now before it can be tested
       xfs.unlink(name, function () {
         const dst = path.resolve(path.dirname(name), header.linkname)
-        if (!inCwd(dst)) return next(new Error(name + ' is not a valid symlink'))
+        if (!inCwd(dst) && validateSymLinks) return next(new Error(name + ' is not a valid symlink'))
 
         xfs.symlink(header.linkname, name, stat)
       })
