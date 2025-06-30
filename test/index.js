@@ -321,6 +321,34 @@ test('do not extract invalid tar', function (t) {
     })
 })
 
+test('extract tar intended for use by chroot', function (t) {
+  if (win32) { // no symlink support on win32 currently. TODO: test if this can be enabled somehow
+    t.plan(1)
+    t.ok(true)
+    return
+  }
+
+  t.plan(1)
+
+  const a = path.join(__dirname, 'fixtures', 'valid.tar')
+
+  const out = path.join(__dirname, 'fixtures', 'valid')
+
+  rimraf.sync(out)
+
+  fs.createReadStream(a)
+    .pipe(tar.extract(out, { validateSymlinks: false }))
+    .on('error', function (err) {
+      t.ok(/is not a valid symlink/i.test(err.message))
+      fs.stat(path.join(out, '../bar'), function (err) {
+        t.ok(err)
+      })
+    })
+    .on('finish', function () {
+      t.ok(true)
+    })
+})
+
 test('no abs hardlink targets', function (t) {
   if (win32) { // no symlink support on win32 currently. TODO: test if this can be enabled somehow
     t.plan(1)
