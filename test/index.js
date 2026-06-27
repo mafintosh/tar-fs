@@ -344,3 +344,114 @@ test('no abs hardlink targets', function (t) {
       })
     })
 })
+
+test('do not follow a pre-existing symlink chain', function (t) {
+  if (win32) { // no symlink support on win32 currently. TODO: test if this can be enabled somehow
+    t.plan(1)
+    t.ok(true)
+    return
+  }
+
+  var out = path.join(__dirname, 'fixtures', 'copy', 'symlink-chain')
+  var outside = path.join(__dirname, 'fixtures', 'copy', 'symlink-chain-outside')
+
+  rimraf.sync(out)
+  rimraf.sync(outside)
+  fs.mkdirSync(out, { recursive: true })
+  fs.mkdirSync(outside, { recursive: true })
+  fs.symlinkSync(outside, path.join(out, 'shared')) // pre-existing external symlink
+
+  var s = tarStream.pack()
+  s.entry({ name: 'newlink', type: 'symlink', linkname: 'shared/secret.txt' })
+  s.finalize()
+
+  s.pipe(tar.extract(out))
+    .on('error', function (err) {
+      t.ok(/is not a valid symlink/i.test(err.message), 'blocked symlink through external chain')
+      t.end()
+    })
+})
+
+test('do not write through a pre-existing symlink', function (t) {
+  if (win32) {
+    t.plan(1)
+    t.ok(true)
+    return
+  }
+
+  var out = path.join(__dirname, 'fixtures', 'copy', 'symlink-target')
+  var outside = path.join(__dirname, 'fixtures', 'copy', 'symlink-target-outside')
+
+  rimraf.sync(out)
+  rimraf.sync(outside)
+  fs.mkdirSync(out, { recursive: true })
+  fs.writeFileSync(outside, 'something')
+  fs.symlinkSync(outside, path.join(out, 'config'))
+
+  var s = tarStream.pack()
+  s.entry({ name: 'config', type: 'file' }, 'overwrite')
+  s.finalize()
+
+  s.pipe(tar.extract(out))
+    .on('finish', function () {
+      t.same(fs.readFileSync(outside, 'utf-8'), 'something', 'outside file untouched')
+      t.same(fs.readFileSync(path.join(out, 'config'), 'utf-8'), 'overwrite', 'written inside cwd')
+      t.end()
+    })
+})
+
+test('do not chmod the extraction root', function (t) {
+  if (win32) {
+    t.plan(1)
+    t.ok(true)
+    return
+  }
+
+  var out = path.join(__dirname, 'fixtures', 'copy', 'chmod-root')
+
+  rimraf.sync(out)
+  fs.mkdirSync(out, { recursive: true })
+  fs.chmodSync(out, parseInt(755, 8))
+
+  var s = tarStream.pack()
+  s.entry({ name: '.', type: 'directory', mode: parseInt(100, 8) })
+  s.finalize()
+
+  s.pipe(tar.extract(out))
+    .on('finish', function () {
+      t.same(fs.statSync(out).mode & parseInt(777, 8), parseInt(755, 8), 'root permissions unchanged')
+      t.end()
+    })
+})
+
+test('strip setuid/setgid/sticky bits', function (t) {
+  if (win32) {
+    t.plan(1)
+    t.ok(true)
+    return
+  }
+
+  var out = path.join(__dirname, 'fixtures', 'copy', 'suid')
+
+  rimraf.sync(out)
+
+  var s = tarStream.pack()
+  s.entry({ name: 'suid', type: 'file', mode: parseInt(4755, 8) }, 'data')
+  s.finalize()
+
+  s.pipe(tar.extract(out))
+    .on('finish', function () {
+      t.same(fs.statSync(path.join(out, 'suid')).mode & parseInt(7000, 8), 0, 'special bits stripped')
+      t.end()
+    })
+})
+
+test('do not pack entries outside cwd', function (t) {
+  t.plan(1)
+
+  var a = path.join(__dirname, 'fixtures', 'a')
+
+  t.throws(function () {
+    tar.pack(a, { entries: ['../b'] })
+  }, /is not a valid path/)
+})

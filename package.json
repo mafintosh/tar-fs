@@ -24,6 +24,11 @@
   "scripts": {
     "test": "standard && tape test/index.js"
   },
+  "standard": {
+    "ignore": [
+      "test/fixtures/**"
+    ]
+  },
   "bugs": {
     "url": "https://github.com/mafintosh/tar-fs/issues"
   },
