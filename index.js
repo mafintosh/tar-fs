@@ -37,6 +37,7 @@ exports.pack = function pack (cwd, opts) {
 
   function onsymlink (filename, header) {
     xfs.readlink(path.join(cwd, filename), function (err, linkname) {
+      if (pack.destroying) return
       if (err) return pack.destroy(err)
       header.linkname = normalize(linkname)
       pack.entry(header, onnextentry)
