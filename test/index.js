@@ -125,6 +125,35 @@ test('follow symlinks', function (t) {
     })
 })
 
+for (const afterClose of [false, true]) {
+  test('ignore readlink results after pack destruction' + (afterClose ? ' completes' : ' starts'), async function (t) {
+    let onreadlink
+    const pendingReadlink = new Promise(function (resolve) { onreadlink = resolve })
+    const xfs = Object.assign({}, fs, {
+      lstat: function (filename, callback) {
+        fs.lstat(path.join(__dirname, 'fixtures', 'a', 'hello.txt'), function (err, stat) {
+          if (err) return callback(err)
+          stat.isSymbolicLink = function () { return true }
+          callback(null, stat)
+        })
+      },
+      readlink: function (filename, callback) {
+        onreadlink(callback)
+      }
+    })
+
+    const pack = tar.pack(__dirname, { fs: xfs, entries: ['link'] })
+    const callback = await pendingReadlink
+    const closed = new Promise(function (resolve) { pack.once('close', resolve) })
+
+    pack.destroy()
+    if (afterClose) await closed
+
+    t.execution(function () { callback(null, 'target') }, 'pending readlink does not throw after cancellation')
+    await closed
+  })
+}
+
 test('strip', function (t) {
   t.plan(2)
 
