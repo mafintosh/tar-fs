@@ -159,9 +159,6 @@ exports.extract = function extract (cwd, opts) {
   return extract
 
   function onentry (header, stream, next) {
-    // if we fail the entry, tar-stream destroys the entry stream with the same error that is emitted on the extract stream
-    stream.on('error', noop)
-
     header = map(header) || header
     header.name = normalize(header.name)
 

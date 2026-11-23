@@ -4,7 +4,7 @@
   "description": "filesystem bindings for tar-stream",
   "dependencies": {
     "pump": "^3.0.0",
-    "tar-stream": "^3.1.5"
+    "tar-stream": "^3.3.0"
   },
   "optionalDependencies": {
     "bare-fs": "^4.0.1",
