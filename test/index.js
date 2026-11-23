@@ -455,3 +455,203 @@ test('do not pack entries outside cwd', function (t) {
     tar.pack(a, { entries: ['../b'] })
   }, /is not a valid path/)
 })
+
+test('symlink can not escape through another symlink', function (t) {
+  if (win32) { // no symlink support on win32 currently. TODO: test if this can be enabled somehow
+    t.plan(1)
+    t.ok(true)
+    return
+  }
+
+  t.plan(4)
+
+  var out = path.join(__dirname, 'fixtures', 'copy', 'symlink-escape', 'out')
+  var secret = path.join(__dirname, 'fixtures', 'copy', 'symlink-escape', 'secret.txt')
+  var links = { s1: '.', s2: 's1/../secret.txt' }
+
+  run(['s1', 's2'], function () { // s1 -> . first, then s2 -> s1/../secret.txt
+    run(['s2', 's1'], function () {}) // same, but the helper link is added afterwards
+  })
+
+  function run (order, cb) {
+    rimraf.sync(path.dirname(out))
+    fs.mkdirSync(out, { recursive: true })
+    fs.writeFileSync(secret, 'secret')
+
+    var s = tarStream.pack()
+    s.entry({ name: order[0], type: 'symlink', linkname: links[order[0]] })
+    s.entry({ name: order[1], type: 'symlink', linkname: links[order[1]] })
+    s.finalize()
+
+    s.pipe(tar.extract(out))
+      .on('error', function (err) {
+        t.ok(/is not a valid symlink/i.test(err.message), order.join(', '))
+        t.throws(function () {
+          fs.readFileSync(path.join(out, 's2'))
+        }, 'can not read outside file')
+        cb()
+      })
+  }
+})
+
+test('do not extract invalid paths', function (t) {
+  if (win32) { // no symlink support on win32 currently. TODO: test if this can be enabled somehow
+    t.plan(1)
+    t.ok(true)
+    return
+  }
+
+  var out = path.join(__dirname, 'fixtures', 'copy', 'invalid-paths')
+
+  var cases = [
+    [{ name: 'a/../b', type: 'file' }, {}, /is not a valid path/],
+    [{ name: '../b', type: 'file' }, {}, /is not a valid path/],
+    [{ name: 'a', type: 'file' }, { map: nullName }, /is not a valid path/],
+    [{ name: 'a', type: 'symlink', linkname: 'b' }, { map: nullLinkname }, /is not a valid symlink/],
+    [{ name: 'a', type: 'link', linkname: 'b' }, { map: nullLinkname }, /is not a valid hardlink/],
+    [{ name: 'a', type: 'link', linkname: 'b/../c' }, {}, /is not a valid hardlink/],
+    [{ name: '.', type: 'file' }, {}, /EISDIR/]
+  ]
+
+  t.plan(cases.length * 2)
+  loop()
+
+  function loop () {
+    if (!cases.length) return
+
+    var c = cases.shift()
+
+    rimraf.sync(out)
+    fs.mkdirSync(out, { recursive: true })
+
+    var s = tarStream.pack()
+    s.entry(c[0], c[0].type === 'file' ? 'data' : undefined)
+    s.finalize()
+
+    s.pipe(tar.extract(out, c[1]))
+      .on('error', function (err) {
+        t.ok(c[2].test(err.message), err.message)
+        t.same(fs.readdirSync(out), [], 'nothing extracted')
+        loop()
+      })
+  }
+
+  function nullName (header) {
+    header.name = 'a\0b'
+    return header
+  }
+
+  function nullLinkname (header) {
+    header.linkname = 'b\0c'
+    return header
+  }
+})
+
+test('symlinks with leading .. inside the root still extract', function (t) {
+  if (win32) { // no symlink support on win32 currently. TODO: test if this can be enabled somehow
+    t.plan(1)
+    t.ok(true)
+    return
+  }
+
+  var out = path.join(__dirname, 'fixtures', 'copy', 'symlink-leading')
+
+  rimraf.sync(out)
+
+  var s = tarStream.pack()
+  s.entry({ name: 'a/b/file', type: 'file' }, 'data')
+  s.entry({ name: 'a/c/link', type: 'symlink', linkname: '../b/file' })
+  s.finalize()
+
+  s.pipe(tar.extract(out))
+    .on('finish', function () {
+      t.same(fs.readFileSync(path.join(out, 'a', 'c', 'link'), 'utf-8'), 'data')
+      t.end()
+    })
+})
+
+test('do not mkdir or chmod through a pre-existing symlink', function (t) {
+  if (win32) { // no symlink support on win32 currently. TODO: test if this can be enabled somehow
+    t.plan(1)
+    t.ok(true)
+    return
+  }
+
+  t.plan(5)
+
+  var out = path.join(__dirname, 'fixtures', 'copy', 'symlink-dir', 'out')
+  var outside = path.join(__dirname, 'fixtures', 'copy', 'symlink-dir', 'outside')
+
+  setup()
+
+  var s = tarStream.pack()
+  s.entry({ name: 'dir/new', type: 'directory' })
+  s.finalize()
+
+  s.pipe(tar.extract(out))
+    .on('error', function (err) {
+      t.ok(/is not a valid path/i.test(err.message))
+      t.same(fs.readdirSync(outside), [], 'nothing created outside')
+
+      setup()
+
+      var mtime = fs.statSync(outside).mtime.getTime()
+
+      var s = tarStream.pack()
+      s.entry({ name: 'dir', type: 'directory', mode: parseInt(777, 8), mtime: new Date(0) })
+      s.finalize()
+
+      s.pipe(tar.extract(out, { umask: 0 }))
+        .on('finish', function () {
+          t.same(fs.statSync(outside).mode & parseInt(777, 8), parseInt(700, 8), 'outside mode untouched')
+          t.same(fs.statSync(outside).mtime.getTime(), mtime, 'outside mtime untouched')
+          t.ok(fs.lstatSync(path.join(out, 'dir')).isDirectory(), 'symlink replaced by a directory')
+        })
+    })
+
+  function setup () {
+    rimraf.sync(path.dirname(out))
+    fs.mkdirSync(out, { recursive: true })
+    fs.mkdirSync(outside, { mode: parseInt(700, 8) })
+    fs.symlinkSync(outside, path.join(out, 'dir'))
+  }
+})
+
+test('invalid links do not remove existing files', function (t) {
+  if (win32) { // no symlink support on win32 currently. TODO: test if this can be enabled somehow
+    t.plan(1)
+    t.ok(true)
+    return
+  }
+
+  var out = path.join(__dirname, 'fixtures', 'copy', 'invalid-links')
+
+  var cases = [
+    [{ name: 'keep', type: 'symlink', linkname: '../../outside' }, /is not a valid symlink/],
+    [{ name: 'keep', type: 'link', linkname: 'missing' }, /is not a valid hardlink/]
+  ]
+
+  t.plan(cases.length * 2)
+  loop()
+
+  function loop () {
+    if (!cases.length) return
+
+    var c = cases.shift()
+
+    rimraf.sync(out)
+    fs.mkdirSync(out, { recursive: true })
+    fs.writeFileSync(path.join(out, 'keep'), 'keep')
+
+    var s = tarStream.pack()
+    s.entry(c[0])
+    s.finalize()
+
+    s.pipe(tar.extract(out))
+      .on('error', function (err) {
+        t.ok(c[1].test(err.message), err.message)
+        t.same(fs.readFileSync(path.join(out, 'keep'), 'utf-8'), 'keep', 'existing file untouched')
+        loop()
+      })
+  }
+})
