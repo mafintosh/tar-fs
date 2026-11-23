@@ -176,22 +176,20 @@ exports.extract = function extract (cwd, opts) {
       return next(new Error(JSON.stringify(header.name) + ' is not a valid path'))
     }
 
-    const dir = path.join(name, '.') === path.join(cwd, '.') ? cwd : path.dirname(name)
+    const isRoot = path.join(name, '.') === path.join(cwd, '.')
+
+    if (isRoot && opts.strip && header.type !== 'directory') { // the entry was stripped away
+      stream.resume()
+      return next()
+    }
+
+    const dir = isRoot ? cwd : path.dirname(name)
 
     validate(xfs, dir, path.join(cwd, '.'), function (err, valid) {
       if (err) return next(err)
       if (!valid) return next(new Error(dir + ' is not a valid path'))
 
-      if (header.type === 'directory') {
-        stack.push([name, header.mtime])
-        return mkdirfix(name, {
-          fs: xfs,
-          own,
-          uid: header.uid,
-          gid: header.gid,
-          mode: header.mode
-        }, stat)
-      }
+      if (header.type === 'directory') return ondirectory()
 
       mkdirfix(dir, {
         fs: xfs,
@@ -218,9 +216,31 @@ exports.extract = function extract (cwd, opts) {
       })
     })
 
+    function ondirectory () {
+      if (isRoot) return onmkdir(null)
+
+      xfs.lstat(name, function (err, st) {
+        if (!err && st.isSymbolicLink()) return xfs.unlink(name, onmkdir) // never mkdir/chmod through an existing symlink
+        onmkdir(null)
+      })
+
+      function onmkdir (err) {
+        if (err) return next(err)
+
+        stack.push([name, header.mtime])
+        mkdirfix(name, {
+          fs: xfs,
+          own,
+          uid: header.uid,
+          gid: header.gid,
+          mode: header.mode
+        }, stat)
+      }
+    }
+
     function stat (err) {
       if (err) return next(err)
-      if (path.join(name, '.') === path.join(cwd, '.')) return next() // do not touch the extraction root itself
+      if (isRoot) return next() // do not touch the extraction root itself
       utimes(name, header, function (err) {
         if (err) return next(err)
         if (win32) return next()
@@ -230,16 +250,19 @@ exports.extract = function extract (cwd, opts) {
 
     function onsymlink () {
       if (win32) return next() // skip symlinks on win for now before it can be tested
-      xfs.unlink(name, function () {
-        const dst = path.resolve(path.dirname(name), header.linkname)
-        // strip shifts the resolution anchor, so a relative linkname may now escape - reject regardless of validateSymlinks
-        if (!inCwd(dst) && (validateSymLinks || opts.strip)) return next(new Error(name + ' is not a valid symlink'))
-        // the os resolves '..' against the real parent, not the lexical one, so 'a/../b' escapes if a is (or later becomes) a symlink
-        if (!validPath(header.linkname, (validateSymLinks || opts.strip) ? DOTDOT_LEADING : DOTDOT_ANY)) return next(new Error(name + ' is not a valid symlink'))
 
-        validateNotSymlink(xfs, dst, path.join(cwd, '.'), function (err, valid) {
-          if (err) return next(err)
-          if (!valid && validateSymLinks) return next(new Error(name + ' is not a valid symlink'))
+      // the os resolves '..' against the real parent, not the lexical one, so 'a/../b' escapes if a is (or later becomes) a symlink
+      if (!validPath(header.linkname, (validateSymLinks || opts.strip) ? DOTDOT_LEADING : DOTDOT_ANY)) return next(new Error(name + ' is not a valid symlink'))
+
+      const dst = path.resolve(path.dirname(name), header.linkname)
+      // strip shifts the resolution anchor, so a relative linkname may now escape - reject regardless of validateSymlinks
+      if (!inCwd(dst) && (validateSymLinks || opts.strip)) return next(new Error(name + ' is not a valid symlink'))
+
+      validateNotSymlink(xfs, dst, path.join(cwd, '.'), function (err, valid) {
+        if (err) return next(err)
+        if (!valid && validateSymLinks) return next(new Error(name + ' is not a valid symlink'))
+
+        xfs.unlink(name, function () {
           xfs.symlink(header.linkname, name, stat)
         })
       })
@@ -247,21 +270,26 @@ exports.extract = function extract (cwd, opts) {
 
     function onlink () {
       if (win32) return next() // skip links on win for now before it can be tested
-      xfs.unlink(name, function () {
-        if (!validPath(header.linkname, DOTDOT_NONE)) return next(new Error(name + ' is not a valid hardlink'))
 
-        const link = path.join(cwd, path.join('/', header.linkname))
+      if (!validPath(header.linkname, DOTDOT_NONE)) return next(new Error(name + ' is not a valid hardlink'))
+
+      const link = path.join(cwd, path.join('/', header.linkname))
+
+      xfs.realpath(cwd, function (err, root) { // cwd itself might be behind a symlink
+        if (err) return next(err)
 
         xfs.realpath(link, function (err, dst) {
-          if (err || !inCwd(dst)) return next(new Error(name + ' is not a valid hardlink'))
+          if (err || !inside(root, dst)) return next(new Error(name + ' is not a valid hardlink'))
 
-          xfs.link(dst, name, function (err) {
-            if (err && err.code === 'EPERM' && opts.hardlinkAsFilesFallback) {
-              stream = xfs.createReadStream(dst)
-              return onfile()
-            }
+          xfs.unlink(name, function () {
+            xfs.link(dst, name, function (err) {
+              if (err && err.code === 'EPERM' && opts.hardlinkAsFilesFallback) {
+                stream = xfs.createReadStream(dst)
+                return onfile()
+              }
 
-            stat(err)
+              stat(err)
+            })
           })
         })
       })
@@ -322,12 +350,14 @@ exports.extract = function extract (cwd, opts) {
     const chown = link ? xfs.lchown : xfs.chown
     /* eslint-enable n/no-deprecated-api */
 
-    if (!chmod) return cb()
-
     const mode = (header.mode | (header.type === 'directory' ? dmode : fmode)) & umask & 0o777 // never extract setuid/setgid/sticky bits
 
-    if (chown && own) chown.call(xfs, name, header.uid, header.gid, onchown)
-    else onchown(null)
+    if (chown && own) {
+      if (!validId(header.uid) || !validId(header.gid)) return cb(new Error(name + ' has an invalid owner'))
+      chown.call(xfs, name, header.uid, header.gid, onchown)
+    } else {
+      onchown(null)
+    }
 
     function onchown (err) {
       if (err) return cb(err)
@@ -342,9 +372,21 @@ exports.extract = function extract (cwd, opts) {
     xfs.stat(name, function (err) {
       if (!err) return cb(null)
       if (err.code !== 'ENOENT') return cb(err)
-      xfs.mkdir(name, { mode: opts.mode, recursive: true }, function (err, made) {
+      xfs.mkdir(name, { mode: opts.mode & 0o7777, recursive: true }, function (err, made) {
         if (err) return cb(err)
-        chperm(name, opts, cb)
+
+        const header = { type: 'directory', mode: opts.mode, uid: opts.uid, gid: opts.gid }
+
+        chpermNext(name)
+
+        function chpermNext (dir) { // from name and up to the first directory that was made, staying below the root
+          chperm(dir, header, function (err) {
+            if (err) return cb(err)
+            const parent = path.dirname(dir)
+            if (typeof made !== 'string' || dir.length <= made.length || parent.length <= cwd.length) return cb(null)
+            chpermNext(parent)
+          })
+        }
       })
     })
   }
@@ -359,6 +401,10 @@ function validateNotSymlink (fs, name, root, cb) {
     if (err || !st.isSymbolicLink()) return validateNotSymlink(fs, path.join(name, '..'), root, cb)
     cb(null, false)
   })
+}
+
+function validId (id) { // -1 means unchanged
+  return Number.isInteger(id) && id >= -1 && id <= 0xffffffff
 }
 
 function validPath (name, dotdot) {
