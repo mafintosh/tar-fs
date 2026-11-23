@@ -510,3 +510,162 @@ test('strip does not allow symlinks to escape', function (t) {
       t.is(fs.readFileSync(outside, 'utf-8'), 'something', 'outside file untouched')
     })
 })
+
+test('symlink can not escape through another symlink', function (t) {
+  if (win32) {
+    t.plan(1)
+    t.ok(true)
+    return
+  }
+
+  t.plan(4)
+
+  const out = path.join(__dirname, 'fixtures', 'symlink-chain', 'out')
+  const secret = path.join(__dirname, 'fixtures', 'symlink-chain', 'secret.txt')
+
+  run(['s1', 's2'], function () { // s1 -> . first, then s2 -> s1/../secret.txt
+    run(['s2', 's1'], function () {}) // same, but the helper link is added afterwards
+  })
+
+  function run (order, cb) {
+    rimraf.sync(path.dirname(out))
+    fs.mkdirSync(out, { recursive: true })
+    fs.writeFileSync(secret, 'secret')
+
+    const links = { s1: '.', s2: 's1/../secret.txt' }
+
+    const s = tarStream.pack()
+    s.entry({ name: order[0], type: 'symlink', linkname: links[order[0]] }, function () {
+      s.entry({ name: order[1], type: 'symlink', linkname: links[order[1]] }, function () {
+        s.finalize()
+      })
+    })
+
+    s.pipe(tar.extract(out))
+      .on('error', function (err) {
+        t.ok(/is not a valid symlink/i.test(err.message), order.join(', '))
+        t.absent(readable(path.join(out, 's2')), 'can not read outside file')
+        cb()
+      })
+      .on('finish', function () {
+        t.fail('should not extract ' + order.join(', '))
+        t.absent(readable(path.join(out, 's2')), 'can not read outside file')
+        cb()
+      })
+  }
+
+  function readable (name) {
+    try {
+      fs.readFileSync(name)
+      return true
+    } catch {
+      return false
+    }
+  }
+})
+
+test('do not extract invalid paths', function (t) {
+  if (win32) { // no symlink support on win32 currently. TODO: test if this can be enabled somehow
+    t.plan(1)
+    t.ok(true)
+    return
+  }
+
+  const out = path.join(__dirname, 'fixtures', 'symlink-chain', 'out')
+
+  const cases = [
+    [{ name: 'a/../b', type: 'file' }, {}, /is not a valid path/],
+    [{ name: '../b', type: 'file' }, {}, /is not a valid path/],
+    [{ name: 'a', type: 'file' }, { map: nullName }, /is not a valid path/],
+    [{ name: 'a', type: 'symlink', linkname: 'b' }, { map: nullLinkname }, /is not a valid symlink/],
+    [{ name: 'a', type: 'symlink', linkname: 'b' }, { map: nullLinkname, validateSymlinks: false }, /is not a valid symlink/],
+    [{ name: 'a', type: 'link', linkname: 'b' }, { map: nullLinkname }, /is not a valid hardlink/],
+    [{ name: 'a', type: 'link', linkname: 'b/../c' }, {}, /is not a valid hardlink/]
+  ]
+
+  t.plan(cases.length * 2)
+  loop()
+
+  function loop () {
+    if (!cases.length) return
+
+    const [header, opts, expected] = cases.shift()
+
+    rimraf.sync(path.dirname(out))
+    fs.mkdirSync(out, { recursive: true })
+
+    const s = tarStream.pack()
+    s.entry(header, header.type === 'file' ? 'data' : undefined, function () {
+      s.finalize()
+    })
+
+    s.pipe(tar.extract(out, opts))
+      .on('error', function (err) {
+        t.ok(expected.test(err.message), err.message)
+        t.alike(fs.readdirSync(out), [], 'nothing extracted')
+        loop()
+      })
+      .on('finish', function () {
+        t.fail('should not extract ' + JSON.stringify(header))
+        t.fail()
+        loop()
+      })
+  }
+
+  function nullName (header) {
+    header.name = 'a\0b'
+    return header
+  }
+
+  function nullLinkname (header) {
+    header.linkname = 'b\0c'
+    return header
+  }
+})
+
+test('symlinks with leading .. inside the root still extract', function (t) {
+  if (win32) { // no symlink support on win32 currently. TODO: test if this can be enabled somehow
+    t.plan(1)
+    t.ok(true)
+    return
+  }
+
+  t.plan(1)
+
+  const out = path.join(__dirname, 'fixtures', 'symlink-chain', 'out')
+
+  rimraf.sync(path.dirname(out))
+
+  const s = tarStream.pack()
+  s.entry({ name: 'a/b/file', type: 'file' }, 'data', function () {
+    s.entry({ name: 'a/c/link', type: 'symlink', linkname: '../b/file' }, function () {
+      s.finalize()
+    })
+  })
+
+  s.pipe(tar.extract(out))
+    .on('finish', function () {
+      t.is(fs.readFileSync(path.join(out, 'a', 'c', 'link'), 'utf-8'), 'data')
+    })
+})
+
+test('failing an entry with pending data does not throw', function (t) {
+  t.plan(1)
+
+  const out = path.join(__dirname, 'fixtures', 'symlink-chain', 'out')
+
+  rimraf.sync(path.dirname(out))
+  fs.mkdirSync(out, { recursive: true })
+  fs.writeFileSync(path.join(out, 'file'), 'not a directory')
+
+  const s = tarStream.pack()
+  s.entry({ name: 'file/child', type: 'file' }, Buffer.alloc(4 * 1024 * 1024), function () {
+    s.finalize()
+  })
+  s.on('error', function () {}) // the pipe forwards the error to the source also
+
+  s.pipe(tar.extract(out))
+    .on('error', function (err) {
+      t.ok(/is not a valid path/i.test(err.message))
+    })
+})

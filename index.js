@@ -5,6 +5,10 @@ const path = require('path')
 
 const win32 = (global.Bare ? global.Bare.platform : process.platform) === 'win32'
 
+const DOTDOT_ANY = 0 // '..' segments allowed anywhere
+const DOTDOT_LEADING = 1 // '..' segments only allowed as a prefix, ie ../../a
+const DOTDOT_NONE = 2 // no '..' segments allowed
+
 exports.pack = function pack (cwd, opts) {
   if (!cwd) cwd = '.'
   if (!opts) opts = {}
@@ -155,6 +159,9 @@ exports.extract = function extract (cwd, opts) {
   return extract
 
   function onentry (header, stream, next) {
+    // if we fail the entry, tar-stream destroys the entry stream with the same error that is emitted on the extract stream
+    stream.on('error', noop)
+
     header = map(header) || header
     header.name = normalize(header.name)
 
@@ -163,6 +170,10 @@ exports.extract = function extract (cwd, opts) {
     if (ignore(name, header)) {
       stream.resume()
       return next()
+    }
+
+    if (!validPath(header.name, DOTDOT_NONE)) {
+      return next(new Error(JSON.stringify(header.name) + ' is not a valid path'))
     }
 
     const dir = path.join(name, '.') === path.join(cwd, '.') ? cwd : path.dirname(name)
@@ -223,6 +234,8 @@ exports.extract = function extract (cwd, opts) {
         const dst = path.resolve(path.dirname(name), header.linkname)
         // strip shifts the resolution anchor, so a relative linkname may now escape - reject regardless of validateSymlinks
         if (!inCwd(dst) && (validateSymLinks || opts.strip)) return next(new Error(name + ' is not a valid symlink'))
+        // the os resolves '..' against the real parent, not the lexical one, so 'a/../b' escapes if a is (or later becomes) a symlink
+        if (!validPath(header.linkname, (validateSymLinks || opts.strip) ? DOTDOT_LEADING : DOTDOT_ANY)) return next(new Error(name + ' is not a valid symlink'))
 
         validateNotSymlink(xfs, dst, path.join(cwd, '.'), function (err, valid) {
           if (err) return next(err)
@@ -235,6 +248,8 @@ exports.extract = function extract (cwd, opts) {
     function onlink () {
       if (win32) return next() // skip links on win for now before it can be tested
       xfs.unlink(name, function () {
+        if (!validPath(header.linkname, DOTDOT_NONE)) return next(new Error(name + ' is not a valid hardlink'))
+
         const link = path.join(cwd, path.join('/', header.linkname))
 
         xfs.realpath(link, function (err, dst) {
@@ -344,6 +359,23 @@ function validateNotSymlink (fs, name, root, cb) {
     if (err || !st.isSymbolicLink()) return validateNotSymlink(fs, path.join(name, '..'), root, cb)
     cb(null, false)
   })
+}
+
+function validPath (name, dotdot) {
+  if (typeof name !== 'string' || name.indexOf('\0') !== -1) return false
+  if (dotdot === DOTDOT_ANY) return true
+
+  let seen = false
+
+  for (const part of name.split(/[/\\]/)) {
+    if (part === '..') {
+      if (seen || dotdot !== DOTDOT_LEADING) return false
+    } else if (part !== '' && part !== '.') {
+      seen = true
+    }
+  }
+
+  return true
 }
 
 function validate (fs, name, root, cb) {
