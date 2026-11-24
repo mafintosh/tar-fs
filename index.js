@@ -449,11 +449,18 @@ function statAll (fs, stat, cwd, ignore, entries, sort) {
   if (!entries) entries = ['.']
   const queue = entries.slice(0)
   const root = path.resolve(cwd)
+  let head = 0
 
   return function loop (callback) {
-    if (!queue.length) return callback(null)
+    if (head === queue.length) return callback(null)
 
-    const next = queue.shift()
+    const next = queue[head]
+    queue[head++] = null
+    // Compact only after consuming at least half to keep queue work linear.
+    if (head * 2 >= queue.length) {
+      queue.splice(0, head)
+      head = 0
+    }
     const nextAbs = path.join(cwd, next)
 
     if (!inside(root, path.resolve(cwd, next))) return callback(new Error(next + ' is not a valid path')) // do not pack outside cwd

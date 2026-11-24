@@ -192,15 +192,16 @@ test('map + dir + permissions', function (t) {
 })
 
 test('specific entries', function (t) {
-  t.plan(6)
+  t.plan(8)
 
   const a = path.join(__dirname, 'fixtures', 'd')
   const b = path.join(__dirname, 'fixtures', 'copy', 'd-entries')
 
   const entries = ['file1', 'sub-files/file3', 'sub-dir']
+  const packed = []
 
   rimraf.sync(b)
-  tar.pack(a, { entries })
+  tar.pack(a, { entries, map: header => { packed.push(header.name) } })
     .pipe(tar.extract(b))
     .on('finish', function () {
       const files = fs.readdirSync(b)
@@ -212,6 +213,8 @@ test('specific entries', function (t) {
       t.alike(subFiles, ['file3'])
       const subDir = fs.readdirSync(path.join(b, 'sub-dir'))
       t.alike(subDir, ['file5'])
+      t.alike(entries, ['file1', 'sub-files/file3', 'sub-dir'])
+      t.alike(packed, ['file1', 'sub-files/file3', 'sub-dir', 'sub-dir/file5'])
     })
 })
 
